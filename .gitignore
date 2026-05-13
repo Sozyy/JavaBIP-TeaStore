@@ -1,0 +1,18 @@
+# Gradle
+.gradle/
+build/
+# IntelliJ
+.idea/
+*.iml
+# Compiled class files
+*.class
+# JARs and libs
+*.jar
+libs/
+apache-log4j-2.14.0-bin/
+# Kotlin
+/.kotlin
+# OS
+.DS_Store
+# logs
+*.log
