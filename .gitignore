@@ -1,7 +1,6 @@
-.gradle
-.idea
+*.idea
+*.project
+*.iml
 
-apache-log4j-2.14.0-bin
-build
-gradle
-lib
+# Generated files
+/src
