@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-javabip_codegen.py
+xmi_to_javabip.py
 
 Génère du code Java JavaBIP à partir d'un modèle XMI conforme au métamodèle
 JavaBIP produit par la transformation Chips → JavaBIP.
 
 Usage:
-    python3 javabip_codegen.py <input.xmi> <output_directory> [--package NAME] [--glue-class NAME]
+    python3 xmi_to_javabip.py <model.xmi> <output_directory> [--package NAME] [--glue-class NAME]
 
 Le script produit :
   * Une classe Java par ComponentType (avec annotations @Port, @ComponentType,
@@ -219,6 +219,7 @@ def generate_component_java(comp, package):
         '',
         'import org.javabip.annotations.*;',
         'import org.javabip.api.PortType;',
+        'import org.javabip.api.Data;',
         '',     # TODO : importer DataOut si on a des getters @Data
     ]
 
@@ -269,10 +270,7 @@ def generate_component_java(comp, package):
     senders = [p for p in comp['ports']
                if p['name'].startswith('send_') or p['name'].startswith('actuate_')]
     if senders:
-        lines.append('    // === DATA WIRES (getters) ===')
-        lines.append('')
-        lines.append('    // Importer DataOut pour AccessType.any :')
-        lines.append('    // import org.javabip.api.DataOut;')
+        lines.append('    // === DATA WIRES ===')
         lines.append('')
         for p in senders:
             # On extrait le "vrai" nom de la donnée derrière le préfixe.
@@ -303,9 +301,6 @@ def generate_glue_java(model_name, components, data_wires, require_rules,
         '',
         'import org.javabip.glue.TwoSynchronGlueBuilder;',
         '',
-        f'/**',
-        f' * Glue générée à partir du modèle JavaBIP "{model_name}".',
-        f' */',
         f'public class {glue_class_name} extends TwoSynchronGlueBuilder {{',
         '',
         '    @Override',

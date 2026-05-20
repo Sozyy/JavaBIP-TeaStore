@@ -1,31 +1,29 @@
--- notes sur claude
--- physical ne donne pas de componentType d'après Anna
-
-
 -- =====================================================================
 -- chips_to_javabip.atl
 --
--- Transformation Chips -> JavaBIP, palier 1 :
---   * Chaque logical_declaration / physical_declaration -> ComponentType                   ~
---   * Pour chaque paramètre d'entrée   : 1 State + 1 Port + 1 Transition                   non ?
---   * Pour chaque output / actuator    : 1 State + 1 Port + 1 Transition                   non ?
---   * Pour chaque sensor (physical)    : 1 State + 1 Port (spontaneous) + 1 Transition     pas besoin
---   * Boucle : INIT -> step_1 -> step_2 -> ... -> step_N -> INIT                           ui
---   * GlueSpec vide (palier 2 ajoutera les feeding_*)                                      ui
---   * object_declaration et collective_function_definition : ignorées                      ui
+-- Transformation Chips -> JavaBIP
+-- Paliers réalisés :
+--   1 : logical_declaration / physical_declaration -> ComponentType avec
+--       boucle d'états et transitions
+--   2 : feeding_logical_* racine avec feeder *_logical_output -> DataWire + RequireRule
+--   3 : extension aux feeding_physical_* et feeder *_physical_output
+--   4a : déroulement des déclarations array (cache[N] -> cache_0, cache_1, ...)
 --
--- Compatible avec le runner emftvm.java fourni.
+-- NOTE PALIER 4a : ce palier produit N ComponentTypes par déclaration array,
+-- mais le GlueSpec n'est PAS encore adapté à cette multiplication. Les
+-- DataWires/RequireRules existants peuvent référencer des composants qui
+-- n'existent plus sous leur nom scalaire. Le palier 4b (foreach) corrigera ça.
 -- =====================================================================
 
 module chips_to_javabip;
 create OUT : JavaBIP from IN : Chips;
 
+
 -- =====================================================================
--- HELPERS OCL
+-- HELPERS GÉNÉRAUX (paliers 1 à 3)
 -- =====================================================================
 
--- Toutes les déclarations qu'on transforme en ComponentType.
--- On se contente de logical_declaration et physical_declaration.
+-- Toutes les déclarations qu'on transforme en ComponentType (logical + physical).
 helper context Chips!program def: blockDeclarations() : Sequence(OclAny) =
     self.system.system_statements
         ->select(s |
@@ -33,26 +31,19 @@ helper context Chips!program def: blockDeclarations() : Sequence(OclAny) =
            or s.oclIsKindOf(Chips!physical_declaration))
         ->asSequence();
 
--- Discriminant logical/physical -- évite de tester deux fois oclIsKindOf.
+-- Discriminant logical/physical.
 helper context OclAny def: isPhysicalDecl() : Boolean =
     self.oclIsKindOf(Chips!physical_declaration);
 
--- Nettoyage de noms : enlève espaces et caractères non identifiants Java.
--- Utilisé pour "redirection dp" -> "redirection_dp".
+-- Nettoyage de noms : remplace espaces et tirets par des underscores.
 helper context String def: sanitize() : String =
     self.replaceAll(' ', '_').replaceAll('-', '_');
 
--- Nom du composant = nom de la variable déclarée.
--- Une logical_declaration a une référence "variable" -> system/logical (qui hérite
--- de variables/variable et possède donc l'attribut "name").
+-- Nom du composant = nom de la variable déclarée, sanitizé.
 helper context OclAny def: componentName() : String =
     self.variable.name.sanitize();
 
--- "Steps" d'une déclaration = séquence ordonnée des éléments qui produisent
--- chacun (1 State, 1 Port, 1 Transition).
--- L'ordre choisi détermine la forme de la boucle :
---   sensors -> parameters -> outputs -> actuators
--- (les flux entrants d'abord, les flux sortants ensuite).
+-- Séquence ordonnée des steps d'une déclaration (sensors + parameters + outputs + actuators).
 helper context OclAny def: steps() : Sequence(OclAny) =
     let sensors : Sequence(OclAny) =
         if self.isPhysicalDecl() then
@@ -76,22 +67,21 @@ helper context OclAny def: steps() : Sequence(OclAny) =
     in
     sensors->union(params)->union(outputs)->union(actuators);
 
--- Classification d'un step en "entrée" vs "sortie", pour choisir
--- le préfixe du port et du nom de transition.
+helper context OclAny def: stepCount() : Integer =
+    self.steps()->size();
+
+-- Classification d'un step.
 helper context OclAny def: isInputStep() : Boolean =
        self.oclIsKindOf(Chips!logical_parameter)
     or self.oclIsKindOf(Chips!physical_parameter);
 
 helper context OclAny def: isSensorStep() : Boolean =
-    -- Un sensor est un physical_parameter, mais on le distingue des paramètres
-    -- logiques d'un physical_definition par le fait qu'il est rangé dans
-    -- la collection "sensor" du conteneur, donc on regarde la classe.
     self.oclIsKindOf(Chips!physical_parameter);
 
 helper context OclAny def: isActuatorStep() : Boolean =
     self.oclIsKindOf(Chips!physical_output);
 
--- Nom de l'état associé au step : "<name>_RCVD" ou "<name>_SENT".
+-- Nom de l'état associé à un step.
 helper context OclAny def: stateName() : String =
     if self.isInputStep() then
         self.name.sanitize() + '_RCVD'
@@ -99,7 +89,7 @@ helper context OclAny def: stateName() : String =
         self.name.sanitize() + '_SENT'
     endif;
 
--- Nom du port associé au step.
+-- Nom du port associé à un step.
 helper context OclAny def: portName() : String =
     if self.isSensorStep() then
         'sense_' + self.name.sanitize()
@@ -111,52 +101,157 @@ helper context OclAny def: portName() : String =
         'send_' + self.name.sanitize()
     endif endif endif;
 
--- Type du port : spontaneous pour les sensors (déclenchement autonome
--- du capteur physique), enforceable partout ailleurs.
+-- Type du port : spontaneous pour les sensors, enforceable sinon.
 helper context OclAny def: portTypeIsSpontaneous() : Boolean =
     self.isSensorStep();
 
------------------
--- Partie Glue --
------------------
 
--- Récupère les feeding_logical_* qui sont au NIVEAU RACINE du system
--- (donc pas à l'intérieur d'un foreach) ET dont le feeder est un
--- int/float/bool_logical_output (donc PAS une constante, PAS une
--- expression système, PAS un collective_cast).
-helper context Chips!program def: eligibleFeedings() : Sequence(OclAny) =
-    self.system.system_statements
-        ->select(s | s.isFeedingLogical())
-        ->select(s | s.feeder.isOutputFeeder())
-        ->asSequence();
+-- =====================================================================
+-- HELPERS PALIER 4a : DÉROULEMENT DES DÉCLARATIONS ARRAY
+-- =====================================================================
 
--- Discriminant : s'agit-il d'un feeding_logical_int/float/bool ?
--- On regroupe les trois pour éviter trois sélections séparées.
-helper context OclAny def: isFeedingLogical() : Boolean =
+-- -- Détecte si une déclaration a une dimension (donc est un tableau).
+-- helper context OclAny def: isArrayDecl() : Boolean =
+--     not self.variable.dimensions.oclIsUndefined();
+
+-- -- Évalue la dimension d'une déclaration array.
+-- -- Cas gérés :
+-- --   * dimension = direct_int littéral (constante)
+-- --   * dimension = int_variable_expression vers une variable système assignée à un direct_int
+-- -- Tout autre cas retourne -1 (signal : on ignore l'array, on traite comme scalaire).
+-- helper context OclAny def: arraySize() : Integer =
+--     let dim : OclAny = self.variable.dimensions in
+--     if dim.oclIsUndefined() then
+--         -1
+--     else
+--         -- Heuristique : si dim a un "value", c'est un direct_int.
+--         -- Si dim a un "variable", c'est un int_variable_expression.
+--         -- On utilise refGetValue pour interroger les attributs dynamiquement.
+--         if not dim.value.oclIsUndefined() then
+--             dim.value
+--         else
+--             if not dim.variable.oclIsUndefined() then
+--                 dim.variable.resolveIntVar()
+--             else
+--                 -1
+--             endif
+--         endif
+--     endif;
+-- Détecte si une déclaration est un tableau (au moins 1 dimension).
+helper context OclAny def: isArrayDecl() : Boolean =
+    not self.variable.dimensions->isEmpty();
+
+-- Évalue la taille (1D uniquement) d'une déclaration array.
+-- On prend la PREMIÈRE dimension.
+helper context OclAny def: arraySize() : Integer =
+    if self.variable.dimensions->isEmpty() then
+        -1
+    else
+        let dim : OclAny = self.variable.dimensions->first() in
+        if dim.oclType().name = 'direct_int' then
+            dim.value
+        else
+            if dim.oclType().name = 'int_variable_expression' then
+                dim.variable.resolveIntVar()
+            else
+                -1
+            endif
+        endif
+    endif;
+
+
+-- Résout la valeur d'une variable système entière en cherchant son
+-- int_assignment dans le system. self est la variable cherchée.
+helper context OclAny def: resolveIntVar() : Integer =
+    let prog : Chips!program = Chips!program.allInstances()->asSequence()->first() in
+    let assignments : Sequence(OclAny) =
+        prog.system.system_statements
+            ->select(s | s.oclType().name = 'int_assignment')
+            ->select(a | a.lvalue.variable = self)
+            ->asSequence()
+    in
+    if assignments->isEmpty() then
+        -1
+    else
+        let firstAssign : OclAny = assignments->first() in
+            if firstAssign.rvalue.oclType().name = 'direct_int' then
+                firstAssign.rvalue.value
+            else
+                -1
+            endif
+    endif;
+
+-- Construit récursivement la séquence [0, 1, ..., n-1].
+-- Helper de module (sans context), appelable globalement.
+helper def: rangeUpTo(n : Integer) : Sequence(Integer) =
+    if n <= 0 then
+        Sequence{}
+    else
+        thisModule.rangeUpTo(n - 1)->append(n - 1)
+    endif;
+
+-- Pour une déclaration, retourne la séquence de ses composants à créer.
+-- Si scalaire : Sequence{decl} (la résolution ATL la convertira via matched rule).
+-- Si array : Sequence{ ArrayDeclAtIndex(decl,0), ..., ArrayDeclAtIndex(decl,n-1) }.
+-- Si array mais dimension non évaluable : on retombe sur le traitement scalaire
+-- (mieux que de tout perdre).
+helper context OclAny def: expandedComponents() : Sequence(OclAny) =
+    if self.isArrayDecl() then
+        let n : Integer = self.arraySize() in
+        if n <= 0 then
+            Sequence{self}  -- fallback scalaire
+        else
+            thisModule.rangeUpTo(n)
+                ->collect(i | thisModule.ArrayDeclAtIndex(self, i))
+        endif
+    else
+        Sequence{self}
+    endif;
+
+
+-- =====================================================================
+-- HELPERS PALIER 2/3 : SÉLECTION DES FEEDINGS POUR LE GLUE
+-- =====================================================================
+
+helper context OclAny def: isFeedingDataflow() : Boolean =
        self.oclIsKindOf(Chips!feeding_logical_int)
     or self.oclIsKindOf(Chips!feeding_logical_float)
-    or self.oclIsKindOf(Chips!feeding_logical_bool);
+    or self.oclIsKindOf(Chips!feeding_logical_bool)
+    or self.oclIsKindOf(Chips!feeding_physical_int)
+    or self.oclIsKindOf(Chips!feeding_physical_float)
+    or self.oclIsKindOf(Chips!feeding_physical_bool);
 
--- Discriminant : le feeder est-il un output (donc un vrai PortRef côté JavaBIP) ?
--- Si c'est une constante (direct_int), une variable système, ou un collective_cast,
--- on dit non — ces cas-là n'ont pas de port source.
+helper context OclAny def: isFeedingPhysical() : Boolean =
+       self.oclIsKindOf(Chips!feeding_physical_int)
+    or self.oclIsKindOf(Chips!feeding_physical_float)
+    or self.oclIsKindOf(Chips!feeding_physical_bool);
+
 helper context OclAny def: isOutputFeeder() : Boolean =
        self.oclIsKindOf(Chips!int_logical_output)
     or self.oclIsKindOf(Chips!float_logical_output)
-    or self.oclIsKindOf(Chips!bool_logical_output);
+    or self.oclIsKindOf(Chips!bool_logical_output)
+    or self.oclIsKindOf(Chips!int_physical_output)
+    or self.oclIsKindOf(Chips!float_physical_output)
+    or self.oclIsKindOf(Chips!bool_physical_output);
 
--- À partir d'un feeding_*, extraire le ComponentType cible (côté eater).
--- L'eater est un objet (logical_eater, physical_eater) qui contient une
--- variable_expression pointant vers la variable d'instance (umachine, wpservice...).
--- La variable a un attribut inverse "declaration" (eOpposite) pointant vers la
--- system_declaration correspondante, qui sera transformée par notre matched rule.
+helper context Chips!program def: eligibleFeedings() : Sequence(OclAny) =
+    self.system.system_statements
+        ->select(s | s.isFeedingDataflow())
+        ->select(s | s.feeder.isOutputFeeder())
+        ->asSequence();
+
+helper context Chips!program def: eligibleFeedingsForRequire() : Sequence(OclAny) =
+    self.eligibleFeedings()
+        ->select(f | not f.isFeedingPhysical())
+        ->asSequence();
+
+-- Extraction des PortRef pour les feedings.
 helper context OclAny def: eaterComponent() : OclAny =
     self.eater.variable_expression.variable.declaration;
 
 helper context OclAny def: eaterStep() : OclAny =
     self.eater.parameter;
 
--- Côté feeder : la variable_expression du feeder pointe sur l'instance source.
 helper context OclAny def: feederComponent() : OclAny =
     self.feeder.variable_expression.variable.declaration;
 
@@ -174,16 +269,18 @@ rule Program2Model {
     to
         m : JavaBIP!JavaBIPModel (
             name       <- p.fileName.sanitize(),
-            components <- p.blockDeclarations(),
+            -- Pour chaque déclaration : si scalaire 1 composant, si array N composants.
+            -- expandedComponents() retourne soit Sequence{decl_brute} (à résoudre par
+            -- les matched rules existantes), soit Sequence{lazy_obj_0, ..., lazy_obj_{n-1}}.
+            -- flatten() aplatit la séquence-de-séquences en une séquence plate.
+            components <- p.blockDeclarations()
+                            ->collect(d | d.expandedComponents())
+                            ->flatten(),
             glue       <- glueSpec
         ),
-        glueSpec : JavaBIP!GlueSpec (
-            -- DataWires : un par feeding_* éligible.
-            dataWires <- p.eligibleFeedings()
-                            ->collect(f | thisModule.FeedingToDataWire(f)),
-            -- Requires : un par feeding_* éligible (sémantique « eater requiert feeder »).
-            requires  <- p.eligibleFeedings()
-                            ->collect(f | thisModule.FeedingToRequire(f)),
+        glueSpec : JavaBIP!"GlueSpec" (
+            dataWires <- p.eligibleFeedings()->collect(f | thisModule.FeedingToDataWire(f)),
+            requires  <- p.eligibleFeedingsForRequire()->collect(f | thisModule.FeedingToRequire(f)),
             accepts   <- Sequence{},
             synchrons <- Sequence{}
         )
@@ -191,18 +288,16 @@ rule Program2Model {
 
 
 -- =====================================================================
--- RÈGLES BLOC -> COMPONENTTYPE
---
--- Deux règles séparées (logical / physical) car :
---   * Le javaClassName diffère (préfixe chips.logical vs chips.physical).
---   * Un physical_definition expose en plus des sensor et actuator.
--- Les helpers steps()/stateName()/portName() unifient le traitement
--- côté contenu de la boucle, donc la duplication reste minimale.
+-- MATCHED RULES PALIER 1 : DÉCLARATIONS SCALAIRES (inchangées)
 -- =====================================================================
+-- Ces règles s'appliquent automatiquement aux déclarations scalaires via la
+-- résolution ATL. Pour les déclarations array, ce sont les lazy rules
+-- ArrayDeclAtIndex ci-dessous qui prennent le relais.
 
 rule LogicalDeclaration2ComponentType {
     from
         d : Chips!logical_declaration
+        (not d.isArrayDecl() or d.arraySize() <= 0)
     to
         c : JavaBIP!ComponentType (
             name          <- d.componentName(),
@@ -210,18 +305,9 @@ rule LogicalDeclaration2ComponentType {
             cardinality   <- '1',
             constructors  <- '()',
             initialState  <- initSt,
-            -- L'état INIT en tête, puis tous les états _RCVD/_SENT issus des steps.
-            -- collect() invoque la lazy rule StepState pour chaque step,
-            -- en propageant un identifiant unique de bloc (d) pour éviter que
-            -- deux blocs partagent les mêmes objets cibles.
             states        <- Sequence{initSt}
-                                ->union(d.steps()->collect(s |
-                                            thisModule.StepState(s, d))),
-            ports         <- d.steps()->collect(s |
-                                            thisModule.StepPort(s, d)),
-            -- N+1 transitions pour N steps : on chaîne INIT -> step_1, step_1 -> step_2,
-            -- ..., step_N -> INIT. La construction est faite par un helper qui
-            -- produit une séquence de paires (sourceStep, targetStep).
+                                ->union(d.steps()->collect(s | thisModule.StepState(s, d))),
+            ports         <- d.steps()->collect(s | thisModule.StepPort(s, d)),
             transitions   <- d.buildTransitionsFor(),
             guards        <- Sequence{},
             definitions   <- ''
@@ -235,6 +321,7 @@ rule LogicalDeclaration2ComponentType {
 rule PhysicalDeclaration2ComponentType {
     from
         d : Chips!physical_declaration
+        (not d.isArrayDecl() or d.arraySize() <= 0)
     to
         c : JavaBIP!ComponentType (
             name          <- d.componentName(),
@@ -243,10 +330,8 @@ rule PhysicalDeclaration2ComponentType {
             constructors  <- '()',
             initialState  <- initSt,
             states        <- Sequence{initSt}
-                                ->union(d.steps()->collect(s |
-                                            thisModule.StepState(s, d))),
-            ports         <- d.steps()->collect(s |
-                                            thisModule.StepPort(s, d)),
+                                ->union(d.steps()->collect(s | thisModule.StepState(s, d))),
+            ports         <- d.steps()->collect(s | thisModule.StepPort(s, d)),
             transitions   <- d.buildTransitionsFor(),
             guards        <- Sequence{},
             definitions   <- ''
@@ -259,13 +344,7 @@ rule PhysicalDeclaration2ComponentType {
 
 
 -- =====================================================================
--- LAZY RULES : un step -> un State, un Port
---
--- Le paramètre "owner" (d) sert d'identité : ATL mémoïse les lazy rules
--- par tuple d'arguments, donc deux appels distincts avec le même step mais
--- des owners différents produisent deux instances cibles différentes.
--- C'est essentiel sinon deux blocs ayant un paramètre "userID" partageraient
--- le même State, ce qu'on ne veut surtout pas.
+-- LAZY RULES PALIER 1 (scalaires) : un step -> 1 State, 1 Port
 -- =====================================================================
 
 lazy rule StepState {
@@ -296,27 +375,10 @@ lazy rule StepPort {
 
 
 -- =====================================================================
--- CONSTRUCTION DES TRANSITIONS
---
--- Une boucle à N+1 transitions pour N steps :
---   T0 : INIT       -> step_1   (port = portName(step_1))
---   T1 : step_1     -> step_2   (port = portName(step_2))
---   ...
---   T_{N-1} : step_{N-1} -> step_N
---   T_N : step_N    -> INIT     (port = "close_loop", transition interne)
---
--- En OCL, on construit la séquence d'indices [1..N+1] puis on appelle
--- une lazy rule TransitionAt qui regarde steps_(i-1) et steps_i.
--- Convention : index 0 = INIT, indices 1..N = steps()[i].
+-- CONSTRUCTION DES TRANSITIONS PALIER 1
 -- =====================================================================
 
-helper context OclAny def: stepCount() : Integer =
-    self.steps()->size();
-
 helper context OclAny def: buildTransitionsFor() : Sequence(OclAny) =
-    -- On parcourt les steps avec un compteur explicite.
-    -- L'accumulateur est un Tuple { idx : Integer, transitions : Sequence }.
-    -- À chaque step, on incrémente idx et on appende une nouvelle transition.
     let stepsSeq : Sequence(OclAny) = self.steps() in
     let result : TupleType(idx : Integer, transitions : Sequence(OclAny)) =
         stepsSeq->iterate(s;
@@ -330,10 +392,6 @@ helper context OclAny def: buildTransitionsFor() : Sequence(OclAny) =
     in
     result.transitions->append(thisModule.LoopBackTransition(self));
 
-
--- Transition qui ARRIVE à un step donné.
---   * Si c'est le premier step (idx = 1), la source est INIT.
---   * Sinon, la source est le step précédent dans la séquence.
 lazy rule TransitionToStep {
     from
         owner : OclAny,
@@ -360,7 +418,6 @@ lazy rule TransitionToStep {
         )
 }
 
--- Transition de bouclage : du dernier step retour à INIT, sans port (internal).
 lazy rule LoopBackTransition {
     from
         owner : OclAny
@@ -375,28 +432,155 @@ lazy rule LoopBackTransition {
         )
 }
 
------------------
--- Partie Glue --
------------------
 
--- Une PortRef = (ComponentType, Port). Mémoïsée par couple (component, step) pour
--- éviter de créer deux PortRef différentes pour la même paire.
+-- =====================================================================
+-- LAZY RULES PALIER 4a : DÉCLARATIONS ARRAY
+-- =====================================================================
+-- Pour chaque déclaration array de taille N, on crée N ComponentTypes
+-- nommés <name>_0, <name>_1, ..., <name>_{N-1}.
+-- La mémoïsation par tuple (d, i) garantit que ArrayDeclAtIndex(d, 0) et
+-- ArrayDeclAtIndex(d, 1) produisent deux instances distinctes.
+
+lazy rule ArrayDeclAtIndex {
+    from
+        d : OclAny,
+        i : Integer
+    to
+        c : JavaBIP!ComponentType (
+            name          <- d.componentName() + '_' + i.toString(),
+            javaClassName <- (if d.isPhysicalDecl() then 'chips.physical.' else 'chips.logical.' endif)
+                             + d.componentName() + '_' + i.toString(),
+            cardinality   <- '1',
+            constructors  <- '()',
+            initialState  <- thisModule.ArrayInitState(d, i),
+            states        <- Sequence{thisModule.ArrayInitState(d, i)}
+                                ->union(d.steps()->collect(s | thisModule.ArrayStepState(s, d, i))),
+            ports         <- d.steps()->collect(s | thisModule.ArrayStepPort(s, d, i)),
+            transitions   <- d.buildArrayTransitions(i),
+            guards        <- Sequence{},
+            definitions   <- ''
+        )
+}
+
+-- État INIT pour la i-ème instance d'un array. Mémoïsé par (owner, idx)
+-- pour garantir que chaque indice a son propre INIT.
+lazy rule ArrayInitState {
+    from
+        owner : OclAny,
+        idx : Integer
+    to
+        s : JavaBIP!State (
+            name    <- 'INIT',
+            initial <- true
+        )
+}
+
+lazy rule ArrayStepState {
+    from
+        step : OclAny,
+        owner : OclAny,
+        idx : Integer
+    to
+        s : JavaBIP!State (
+            name    <- step.stateName(),
+            initial <- false
+        )
+}
+
+lazy rule ArrayStepPort {
+    from
+        step : OclAny,
+        owner : OclAny,
+        idx : Integer
+    to
+        port : JavaBIP!Port (
+            name <- step.portName(),
+            type <- if step.portTypeIsSpontaneous() then
+                        #spontaneous
+                    else
+                        #enforceable
+                    endif
+        )
+}
+
+helper context OclAny def: buildArrayTransitions(arrIdx : Integer) : Sequence(OclAny) =
+    let stepsSeq : Sequence(OclAny) = self.steps() in
+    let result : TupleType(idx : Integer, transitions : Sequence(OclAny)) =
+        stepsSeq->iterate(s;
+            acc : TupleType(idx : Integer, transitions : Sequence(OclAny)) =
+                Tuple{ idx = 0, transitions = Sequence{} } |
+            Tuple{
+                idx = acc.idx + 1,
+                transitions = acc.transitions->append(
+                    thisModule.ArrayTransitionToStep(self, s, acc.idx + 1, arrIdx))
+            })
+    in
+    result.transitions->append(thisModule.ArrayLoopBackTransition(self, arrIdx));
+
+lazy rule ArrayTransitionToStep {
+    from
+        owner : OclAny,
+        target_step : OclAny,
+        step_idx : Integer,
+        arr_idx : Integer
+    to
+        t : JavaBIP!Transition (
+            name             <- 't' + step_idx.toString(),
+            transitionMethod <- 'step' + step_idx.toString(),
+            source           <- if step_idx = 1 then
+                                    thisModule.ArrayInitState(owner, arr_idx)
+                                else
+                                    let prevIdx : Integer = step_idx - 1 in
+                                    let prevStep : OclAny = owner.steps()->at(prevIdx) in
+                                    thisModule.ArrayStepState(prevStep, owner, arr_idx)
+                                endif,
+            target           <- thisModule.ArrayStepState(target_step, owner, arr_idx),
+            port             <- thisModule.ArrayStepPort(target_step, owner, arr_idx),
+            type             <- if target_step.portTypeIsSpontaneous() then
+                                    #spontaneous
+                                else
+                                    #enforceable
+                                endif
+        )
+}
+
+lazy rule ArrayLoopBackTransition {
+    from
+        owner : OclAny,
+        arr_idx : Integer
+    to
+        t : JavaBIP!Transition (
+            name             <- 'loop_back',
+            transitionMethod <- 'loopBack',
+            source           <- let lastStep : OclAny = owner.steps()->at(owner.stepCount()) in
+                                thisModule.ArrayStepState(lastStep, owner, arr_idx),
+            target           <- thisModule.ArrayInitState(owner, arr_idx),
+            type             <- #internal
+        )
+}
+
+
+-- =====================================================================
+-- LAZY RULES PALIER 2/3 : DATAWIRE, PORTREF, REQUIRERULE
+-- =====================================================================
+-- ATTENTION palier 4a : ces règles ne savent PAS gérer les déclarations array.
+-- Si feederComponent() ou eaterComponent() pointe sur une déclaration array,
+-- MakePortRef appellera StepPort(step, decl) qui produira un port "scalaire"
+-- détaché des composants array_i. Conséquence : le PortRef.component vaudra
+-- OclUndefined, et la transformation pourra planter ou produire du XMI invalide.
+-- Le palier 4b corrigera ce comportement.
+
 lazy rule MakePortRef {
     from
         compDecl : OclAny,
         step : OclAny
     to
         pr : JavaBIP!PortRef (
-            -- ATL résout compDecl vers le ComponentType produit par
-            -- LogicalDeclaration2ComponentType ou PhysicalDeclaration2ComponentType.
             component <- compDecl,
-            -- Le port est résolu par la lazy rule StepPort déjà existante
-            -- du palier 1. Mémoïsation garantie pour la cohérence.
             port      <- thisModule.StepPort(step, compDecl)
         )
 }
 
--- Un DataWire = (PortRef source, PortRef cible).
 lazy rule FeedingToDataWire {
     from
         f : OclAny
@@ -407,17 +591,12 @@ lazy rule FeedingToDataWire {
         )
 }
 
--- Un RequireRule sur l'effet = port de l'eater, avec cause = port du feeder.
--- Sémantique : « le port qui reçoit ne peut s'activer que si le port qui émet
--- s'active en même temps ». C'est la traduction naturelle de la sémantique
--- semi-synchrone Chips où un feeding établit un contrat de présence.
 lazy rule FeedingToRequire {
     from
         f : OclAny
     to
         rr : JavaBIP!RequireRule (
             effect <- thisModule.MakePortRef(f.eaterComponent(), f.eaterStep()),
-            causes <- Sequence{ thisModule.MakePortRef(f.feederComponent(),
-                                                       f.feederStep()) }
+            causes <- Sequence{ thisModule.MakePortRef(f.feederComponent(), f.feederStep()) }
         )
 }
