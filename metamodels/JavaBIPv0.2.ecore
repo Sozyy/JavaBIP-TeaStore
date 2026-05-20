@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ecore:EPackage xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:ecore="http://www.eclipse.org/emf/2002/Ecore" name="JavaBIP">
+    <eClassifiers xsi:type="ecore:EClass" name="JavaBIPModel">
+        <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+            eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" />
+        <eStructuralFeatures xsi:type="ecore:EReference" name="components" lowerBound="1"
+            upperBound="-1" eType="#//behavior/ComponentType" />
+        <eStructuralFeatures xsi:type="ecore:EReference" name="glue" lowerBound="1"
+            eType="#//glue/GlueSpec" />
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="PortType">
+        <eLiterals name="enforceable" />
+        <eLiterals name="spontaneous" value="1" />
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="TransitionType">
+        <eLiterals name="enforceable" />
+        <eLiterals name="spontaneous" value="1" />
+        <eLiterals name="internal" value="2" />
+    </eClassifiers>
+    <eClassifiers xsi:type="ecore:EEnum" name="DataOutType">
+        <eLiterals name="any" />
+        <eLiterals name="witness" value="1" />
+        <eLiterals name="allowed" value="2" />
+        <eLiterals name="unallowed" value="3" />
+    </eClassifiers>
+    <eSubpackages name="behavior" nsURI="http://JavaBIP/behavior" nsPrefix="behavior">
+        <eClassifiers xsi:type="ecore:EClass" name="ComponentType">
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+                eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" />
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="javaClassName" lowerBound="1"
+                eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" />
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="cardinality" lowerBound="1"
+                eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" />
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="constructors" lowerBound="1"
+                eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" />
+            <eStructuralFeatures xsi:type="ecore:EReference" name="initialState" lowerBound="1"
+                eType="#//behavior/State" />
+            <eStructuralFeatures xsi:type="ecore:EReference" name="states" upperBound="-1"
+                eType="#//behavior/State" />
+            <eStructuralFeatures xsi:type="ecore:EReference" name="ports" upperBound="-1"
+                eType="#//behavior/Port" />
+            <eStructuralFeatures xsi:type="ecore:EReference" name="transitions" upperBound="-1"
+                eType="#//behavior/Transition" />
+            <eStructuralFeatures xsi:type="ecore:EReference" name="guards" upperBound="-1"
+                eType="#//behavior/Guard" />
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="definitions" lowerBound="1"
+                eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" />
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="State">
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+                eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" />
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="initial" lowerBound="1"
+                eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EBoolean" />
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="Port">
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+                eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" />
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" lowerBound="1"
+                eType="#//PortType" />
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="Transition">
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="name"
+                eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" />
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="transitionMethod" lowerBound="1"
+                eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" />
+            <eStructuralFeatures xsi:type="ecore:EReference" name="source" lowerBound="1"
+                eType="#//behavior/State" />
+            <eStructuralFeatures xsi:type="ecore:EReference" name="target" lowerBound="1"
+                eType="#//behavior/State" />
+            <eStructuralFeatures xsi:type="ecore:EReference" name="port" eType="#//behavior/Port" />
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="guardName"
+                eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" />
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" lowerBound="1"
+                eType="#//TransitionType" />
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="Guard">
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="name"
+                eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" />
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="methodName" lowerBound="1"
+                eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" />
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="DataOut">
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="name" lowerBound="1"
+                eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString" />
+            <eStructuralFeatures xsi:type="ecore:EAttribute" name="type" lowerBound="1"
+                eType="#//DataOutType" />
+        </eClassifiers>
+    </eSubpackages>
+    <eSubpackages name="glue" nsURI="http://JavaBIP/glue" nsPrefix="glue">
+        <eClassifiers xsi:type="ecore:EClass" name="GlueSpec">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="accepts" upperBound="-1"
+                eType="#//glue/AcceptRule" />
+            <eStructuralFeatures xsi:type="ecore:EReference" name="requires" upperBound="-1"
+                eType="#//glue/RequireRule" />
+            <eStructuralFeatures xsi:type="ecore:EReference" name="dataWires" upperBound="-1"
+                eType="#//glue/DataWire" />
+            <eStructuralFeatures xsi:type="ecore:EReference" name="synchrons" upperBound="-1"
+                eType="#//glue/Synchron" />
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="PortRef">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="component" lowerBound="1"
+                eType="#//behavior/ComponentType" />
+            <eStructuralFeatures xsi:type="ecore:EReference" name="port" lowerBound="1"
+                eType="#//behavior/Port" />
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="AcceptRule">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="effect" lowerBound="1"
+                eType="#//glue/PortRef" />
+            <eStructuralFeatures xsi:type="ecore:EReference" name="causes" lowerBound="1"
+                upperBound="-1" eType="#//glue/PortRef" />
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="RequireRule">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="effect" lowerBound="1"
+                eType="#//glue/PortRef" />
+            <eStructuralFeatures xsi:type="ecore:EReference" name="causes" lowerBound="1"
+                upperBound="-1" eType="#//glue/PortRef" />
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="DataWire">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="from" lowerBound="1"
+                eType="#//glue/PortRef" />
+            <eStructuralFeatures xsi:type="ecore:EReference" name="to" lowerBound="1"
+                eType="#//glue/PortRef" />
+        </eClassifiers>
+        <eClassifiers xsi:type="ecore:EClass" name="Synchron">
+            <eStructuralFeatures xsi:type="ecore:EReference" name="from" lowerBound="1"
+                eType="#//glue/PortRef" />
+            <eStructuralFeatures xsi:type="ecore:EReference" name="to" lowerBound="1"
+                eType="#//glue/PortRef" />
+        </eClassifiers>
+    </eSubpackages>
+</ecore:EPackage>

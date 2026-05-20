@@ -1,0 +1,481 @@
+<?xml version="1.0" encoding="ASCII"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:behavior="http://JavaBIP/behavior" xmlns:glue="http://JavaBIP/glue">
+  <JavaBIPModel name="TeaStoreVariation.chips" components="/18 /20 /2 /4 /6 /8 /10 /12 /14 /16" glue="/1"/>
+  <glue:GlueSpec requires="/77 /82 /87 /92 /97 /102 /107 /112 /117 /122 /127" dataWires="/22 /27 /32 /37 /42 /47 /52 /57 /62 /67 /72"/>
+  <behavior:ComponentType name="uainterpreter" javaClassName="chips.logical.uainterpreter" cardinality="1" constructors="()" initialState="/3" states="/3 /132 /133 /134 /135 /136 /137" ports="/138 /139 /140 /141 /142 /143" transitions="/144 /147 /151 /155 /159 /163 /167" definitions=""/>
+  <behavior:State name="INIT" initial="true"/>
+  <behavior:ComponentType name="wpservice" javaClassName="chips.logical.wpservice" cardinality="1" constructors="()" initialState="/5" states="/5 /169 /170 /171 /172 /173" ports="/174 /175 /176 /177 /178" transitions="/179 /182 /186 /190 /194 /198" definitions=""/>
+  <behavior:State name="INIT" initial="true"/>
+  <behavior:ComponentType name="rvalidator" javaClassName="chips.logical.rvalidator" cardinality="1" constructors="()" initialState="/7" states="/7 /200 /201 /202 /203 /204 /205" ports="/206 /207 /208 /209 /210 /211" transitions="/212 /215 /219 /223 /227 /231 /235" definitions=""/>
+  <behavior:State name="INIT" initial="true"/>
+  <behavior:ComponentType name="rlimiter" javaClassName="chips.logical.rlimiter" cardinality="1" constructors="()" initialState="/9" states="/9 /237 /238 /239 /240 /241 /242 /243 /244" ports="/245 /246 /247 /248 /249 /250 /251 /252" transitions="/253 /256 /260 /264 /268 /272 /276 /280 /284" definitions=""/>
+  <behavior:State name="INIT" initial="true"/>
+  <behavior:ComponentType name="cache" javaClassName="chips.logical.cache" cardinality="1" constructors="()" initialState="/11" states="/11 /286 /287 /288" ports="/289 /290 /291" transitions="/292 /295 /299 /303" definitions=""/>
+  <behavior:State name="INIT" initial="true"/>
+  <behavior:ComponentType name="ctrl" javaClassName="chips.logical.ctrl" cardinality="1" constructors="()" initialState="/13" states="/13 /305 /306 /307 /308" ports="/309 /310 /311 /312" transitions="/313 /316 /320 /324 /328" definitions=""/>
+  <behavior:State name="INIT" initial="true"/>
+  <behavior:ComponentType name="authenticator" javaClassName="chips.logical.authenticator" cardinality="1" constructors="()" initialState="/15" states="/15 /330 /331" ports="/332 /333" transitions="/334 /337 /341" definitions=""/>
+  <behavior:State name="INIT" initial="true"/>
+  <behavior:ComponentType name="dprovider" javaClassName="chips.logical.dprovider" cardinality="1" constructors="()" initialState="/17" states="/17 /343 /344 /345 /346 /347 /348 /349 /350 /351" ports="/352 /353 /354 /355 /356 /357 /358 /359 /360" transitions="/361 /364 /368 /372 /376 /380 /384 /388 /392 /396" definitions=""/>
+  <behavior:State name="INIT" initial="true"/>
+  <behavior:ComponentType name="umachine" javaClassName="chips.physical.umachine" cardinality="1" constructors="()" initialState="/19" states="/19 /398 /399 /400 /401 /402 /403" ports="/404 /405 /406 /407 /408 /409" transitions="/410 /413 /417 /421 /425 /429 /433" definitions=""/>
+  <behavior:State name="INIT" initial="true"/>
+  <behavior:ComponentType name="smachine" javaClassName="chips.physical.smachine" cardinality="1" constructors="smachine() { int i = 0; }" initialState="/21" states="/21 /435 /436 /437 /438 /439 /440 /441" ports="/442 /443 /444 /445 /446 /447 /448" transitions="/449 /452 /456 /460 /464 /468 /472 /476" definitions=""/>
+  <behavior:State name="INIT" initial="true"/>
+  <glue:DataWire from="/23" to="/25"/>
+  <glue:PortRef component="/4" port="/24"/>
+  <behavior:Port name="send_idToRespondTo"/>
+  <glue:PortRef component="/20" port="/26"/>
+  <behavior:Port name="recv_wpServed"/>
+  <glue:DataWire from="/28" to="/30"/>
+  <glue:PortRef component="/20" port="/29"/>
+  <behavior:Port name="send_nbData"/>
+  <glue:PortRef component="/2" port="/31"/>
+  <behavior:Port name="recv_nbDataRcvd"/>
+  <glue:DataWire from="/33" to="/35"/>
+  <glue:PortRef component="/20" port="/34"/>
+  <behavior:Port name="send_userAuth"/>
+  <glue:PortRef component="/2" port="/36"/>
+  <behavior:Port name="recv_authDataRcvd"/>
+  <glue:DataWire from="/38" to="/40"/>
+  <glue:PortRef component="/20" port="/39"/>
+  <behavior:Port name="send_userID"/>
+  <glue:PortRef component="/2" port="/41"/>
+  <behavior:Port name="recv_userIDRcvd"/>
+  <glue:DataWire from="/43" to="/45"/>
+  <glue:PortRef component="/2" port="/44"/>
+  <behavior:Port name="send_authProvided"/>
+  <glue:PortRef component="/14" port="/46"/>
+  <behavior:Port name="recv_authProvided"/>
+  <glue:DataWire from="/48" to="/50"/>
+  <glue:PortRef component="/2" port="/49"/>
+  <behavior:Port name="send_nbData"/>
+  <glue:PortRef component="/6" port="/51"/>
+  <behavior:Port name="recv_nbData"/>
+  <glue:DataWire from="/53" to="/55"/>
+  <glue:PortRef component="/2" port="/54"/>
+  <behavior:Port name="send_reqID"/>
+  <glue:PortRef component="/6" port="/56"/>
+  <behavior:Port name="recv_requestID"/>
+  <glue:DataWire from="/58" to="/60"/>
+  <glue:PortRef component="/14" port="/59"/>
+  <behavior:Port name="send_isAuthenticated"/>
+  <glue:PortRef component="/6" port="/61"/>
+  <behavior:Port name="recv_isAuthenticated"/>
+  <glue:DataWire from="/63" to="/65"/>
+  <glue:PortRef component="/6" port="/64"/>
+  <behavior:Port name="send_userID"/>
+  <glue:PortRef component="/8" port="/66"/>
+  <behavior:Port name="recv_userID"/>
+  <glue:DataWire from="/68" to="/70"/>
+  <glue:PortRef component="/6" port="/69"/>
+  <behavior:Port name="send_nbDataRequested"/>
+  <glue:PortRef component="/8" port="/71"/>
+  <behavior:Port name="recv_nbDataToFetch"/>
+  <glue:DataWire from="/73" to="/75"/>
+  <glue:PortRef component="/6" port="/74"/>
+  <behavior:Port name="send_redirection"/>
+  <glue:PortRef component="/8" port="/76"/>
+  <behavior:Port name="recv_redirection"/>
+  <glue:RequireRule effect="/78" causes="/80"/>
+  <glue:PortRef component="/20" port="/79"/>
+  <behavior:Port name="recv_wpServed"/>
+  <glue:PortRef component="/4" port="/81"/>
+  <behavior:Port name="send_idToRespondTo"/>
+  <glue:RequireRule effect="/83" causes="/85"/>
+  <glue:PortRef component="/2" port="/84"/>
+  <behavior:Port name="recv_nbDataRcvd"/>
+  <glue:PortRef component="/20" port="/86"/>
+  <behavior:Port name="send_nbData"/>
+  <glue:RequireRule effect="/88" causes="/90"/>
+  <glue:PortRef component="/2" port="/89"/>
+  <behavior:Port name="recv_authDataRcvd"/>
+  <glue:PortRef component="/20" port="/91"/>
+  <behavior:Port name="send_userAuth"/>
+  <glue:RequireRule effect="/93" causes="/95"/>
+  <glue:PortRef component="/2" port="/94"/>
+  <behavior:Port name="recv_userIDRcvd"/>
+  <glue:PortRef component="/20" port="/96"/>
+  <behavior:Port name="send_userID"/>
+  <glue:RequireRule effect="/98" causes="/100"/>
+  <glue:PortRef component="/14" port="/99"/>
+  <behavior:Port name="recv_authProvided"/>
+  <glue:PortRef component="/2" port="/101"/>
+  <behavior:Port name="send_authProvided"/>
+  <glue:RequireRule effect="/103" causes="/105"/>
+  <glue:PortRef component="/6" port="/104"/>
+  <behavior:Port name="recv_nbData"/>
+  <glue:PortRef component="/2" port="/106"/>
+  <behavior:Port name="send_nbData"/>
+  <glue:RequireRule effect="/108" causes="/110"/>
+  <glue:PortRef component="/6" port="/109"/>
+  <behavior:Port name="recv_requestID"/>
+  <glue:PortRef component="/2" port="/111"/>
+  <behavior:Port name="send_reqID"/>
+  <glue:RequireRule effect="/113" causes="/115"/>
+  <glue:PortRef component="/6" port="/114"/>
+  <behavior:Port name="recv_isAuthenticated"/>
+  <glue:PortRef component="/14" port="/116"/>
+  <behavior:Port name="send_isAuthenticated"/>
+  <glue:RequireRule effect="/118" causes="/120"/>
+  <glue:PortRef component="/8" port="/119"/>
+  <behavior:Port name="recv_userID"/>
+  <glue:PortRef component="/6" port="/121"/>
+  <behavior:Port name="send_userID"/>
+  <glue:RequireRule effect="/123" causes="/125"/>
+  <glue:PortRef component="/8" port="/124"/>
+  <behavior:Port name="recv_nbDataToFetch"/>
+  <glue:PortRef component="/6" port="/126"/>
+  <behavior:Port name="send_nbDataRequested"/>
+  <glue:RequireRule effect="/128" causes="/130"/>
+  <glue:PortRef component="/8" port="/129"/>
+  <behavior:Port name="recv_redirection"/>
+  <glue:PortRef component="/6" port="/131"/>
+  <behavior:Port name="send_redirection"/>
+  <behavior:State name="nbDataRcvd_RCVD"/>
+  <behavior:State name="authDataRcvd_RCVD"/>
+  <behavior:State name="userIDRcvd_RCVD"/>
+  <behavior:State name="nbData_SENT"/>
+  <behavior:State name="reqID_SENT"/>
+  <behavior:State name="authProvided_SENT"/>
+  <behavior:Port name="recv_nbDataRcvd"/>
+  <behavior:Port name="recv_authDataRcvd"/>
+  <behavior:Port name="recv_userIDRcvd"/>
+  <behavior:Port name="send_nbData"/>
+  <behavior:Port name="send_reqID"/>
+  <behavior:Port name="send_authProvided"/>
+  <behavior:Transition name="t1" transitionMethod="step1" source="/3" target="/145" port="/146"/>
+  <behavior:State name="nbDataRcvd_RCVD"/>
+  <behavior:Port name="recv_nbDataRcvd"/>
+  <behavior:Transition name="t2" transitionMethod="step2" source="/148" target="/149" port="/150"/>
+  <behavior:State name="nbDataRcvd_RCVD"/>
+  <behavior:State name="authDataRcvd_RCVD"/>
+  <behavior:Port name="recv_authDataRcvd"/>
+  <behavior:Transition name="t3" transitionMethod="step3" source="/152" target="/153" port="/154"/>
+  <behavior:State name="authDataRcvd_RCVD"/>
+  <behavior:State name="userIDRcvd_RCVD"/>
+  <behavior:Port name="recv_userIDRcvd"/>
+  <behavior:Transition name="t4" transitionMethod="step4" source="/156" target="/157" port="/158"/>
+  <behavior:State name="userIDRcvd_RCVD"/>
+  <behavior:State name="nbData_SENT"/>
+  <behavior:Port name="send_nbData"/>
+  <behavior:Transition name="t5" transitionMethod="step5" source="/160" target="/161" port="/162"/>
+  <behavior:State name="nbData_SENT"/>
+  <behavior:State name="reqID_SENT"/>
+  <behavior:Port name="send_reqID"/>
+  <behavior:Transition name="t6" transitionMethod="step6" source="/164" target="/165" port="/166"/>
+  <behavior:State name="reqID_SENT"/>
+  <behavior:State name="authProvided_SENT"/>
+  <behavior:Port name="send_authProvided"/>
+  <behavior:Transition name="loop_back" transitionMethod="loopBack" source="/168" target="/3" type="internal"/>
+  <behavior:State name="authProvided_SENT"/>
+  <behavior:State name="respondToThisIDs_RCVD"/>
+  <behavior:State name="requiresAuth_RCVD"/>
+  <behavior:State name="idToRespondTo_SENT"/>
+  <behavior:State name="reqAuth_SENT"/>
+  <behavior:State name="isNewPage_SENT"/>
+  <behavior:Port name="recv_respondToThisIDs"/>
+  <behavior:Port name="recv_requiresAuth"/>
+  <behavior:Port name="send_idToRespondTo"/>
+  <behavior:Port name="send_reqAuth"/>
+  <behavior:Port name="send_isNewPage"/>
+  <behavior:Transition name="t1" transitionMethod="step1" source="/5" target="/180" port="/181"/>
+  <behavior:State name="respondToThisIDs_RCVD"/>
+  <behavior:Port name="recv_respondToThisIDs"/>
+  <behavior:Transition name="t2" transitionMethod="step2" source="/183" target="/184" port="/185"/>
+  <behavior:State name="respondToThisIDs_RCVD"/>
+  <behavior:State name="requiresAuth_RCVD"/>
+  <behavior:Port name="recv_requiresAuth"/>
+  <behavior:Transition name="t3" transitionMethod="step3" source="/187" target="/188" port="/189"/>
+  <behavior:State name="requiresAuth_RCVD"/>
+  <behavior:State name="idToRespondTo_SENT"/>
+  <behavior:Port name="send_idToRespondTo"/>
+  <behavior:Transition name="t4" transitionMethod="step4" source="/191" target="/192" port="/193"/>
+  <behavior:State name="idToRespondTo_SENT"/>
+  <behavior:State name="reqAuth_SENT"/>
+  <behavior:Port name="send_reqAuth"/>
+  <behavior:Transition name="t5" transitionMethod="step5" source="/195" target="/196" port="/197"/>
+  <behavior:State name="reqAuth_SENT"/>
+  <behavior:State name="isNewPage_SENT"/>
+  <behavior:Port name="send_isNewPage"/>
+  <behavior:Transition name="loop_back" transitionMethod="loopBack" source="/199" target="/5" type="internal"/>
+  <behavior:State name="isNewPage_SENT"/>
+  <behavior:State name="nbData_RCVD"/>
+  <behavior:State name="requestID_RCVD"/>
+  <behavior:State name="isAuthenticated_RCVD"/>
+  <behavior:State name="nbDataRequested_SENT"/>
+  <behavior:State name="userID_SENT"/>
+  <behavior:State name="redirection_SENT"/>
+  <behavior:Port name="recv_nbData"/>
+  <behavior:Port name="recv_requestID"/>
+  <behavior:Port name="recv_isAuthenticated"/>
+  <behavior:Port name="send_nbDataRequested"/>
+  <behavior:Port name="send_userID"/>
+  <behavior:Port name="send_redirection"/>
+  <behavior:Transition name="t1" transitionMethod="step1" source="/7" target="/213" port="/214"/>
+  <behavior:State name="nbData_RCVD"/>
+  <behavior:Port name="recv_nbData"/>
+  <behavior:Transition name="t2" transitionMethod="step2" source="/216" target="/217" port="/218"/>
+  <behavior:State name="nbData_RCVD"/>
+  <behavior:State name="requestID_RCVD"/>
+  <behavior:Port name="recv_requestID"/>
+  <behavior:Transition name="t3" transitionMethod="step3" source="/220" target="/221" port="/222"/>
+  <behavior:State name="requestID_RCVD"/>
+  <behavior:State name="isAuthenticated_RCVD"/>
+  <behavior:Port name="recv_isAuthenticated"/>
+  <behavior:Transition name="t4" transitionMethod="step4" source="/224" target="/225" port="/226"/>
+  <behavior:State name="isAuthenticated_RCVD"/>
+  <behavior:State name="nbDataRequested_SENT"/>
+  <behavior:Port name="send_nbDataRequested"/>
+  <behavior:Transition name="t5" transitionMethod="step5" source="/228" target="/229" port="/230"/>
+  <behavior:State name="nbDataRequested_SENT"/>
+  <behavior:State name="userID_SENT"/>
+  <behavior:Port name="send_userID"/>
+  <behavior:Transition name="t6" transitionMethod="step6" source="/232" target="/233" port="/234"/>
+  <behavior:State name="userID_SENT"/>
+  <behavior:State name="redirection_SENT"/>
+  <behavior:Port name="send_redirection"/>
+  <behavior:Transition name="loop_back" transitionMethod="loopBack" source="/236" target="/7" type="internal"/>
+  <behavior:State name="redirection_SENT"/>
+  <behavior:State name="redirection_RCVD"/>
+  <behavior:State name="maxRequests_RCVD"/>
+  <behavior:State name="userID_RCVD"/>
+  <behavior:State name="nbDataToFetch_RCVD"/>
+  <behavior:State name="nbAnsweredReqs_RCVD"/>
+  <behavior:State name="redirection_SENT"/>
+  <behavior:State name="userID_SENT"/>
+  <behavior:State name="dataQty_SENT"/>
+  <behavior:Port name="recv_redirection"/>
+  <behavior:Port name="recv_maxRequests"/>
+  <behavior:Port name="recv_userID"/>
+  <behavior:Port name="recv_nbDataToFetch"/>
+  <behavior:Port name="recv_nbAnsweredReqs"/>
+  <behavior:Port name="send_redirection"/>
+  <behavior:Port name="send_userID"/>
+  <behavior:Port name="send_dataQty"/>
+  <behavior:Transition name="t1" transitionMethod="step1" source="/9" target="/254" port="/255"/>
+  <behavior:State name="redirection_RCVD"/>
+  <behavior:Port name="recv_redirection"/>
+  <behavior:Transition name="t2" transitionMethod="step2" source="/257" target="/258" port="/259"/>
+  <behavior:State name="redirection_RCVD"/>
+  <behavior:State name="maxRequests_RCVD"/>
+  <behavior:Port name="recv_maxRequests"/>
+  <behavior:Transition name="t3" transitionMethod="step3" source="/261" target="/262" port="/263"/>
+  <behavior:State name="maxRequests_RCVD"/>
+  <behavior:State name="userID_RCVD"/>
+  <behavior:Port name="recv_userID"/>
+  <behavior:Transition name="t4" transitionMethod="step4" source="/265" target="/266" port="/267"/>
+  <behavior:State name="userID_RCVD"/>
+  <behavior:State name="nbDataToFetch_RCVD"/>
+  <behavior:Port name="recv_nbDataToFetch"/>
+  <behavior:Transition name="t5" transitionMethod="step5" source="/269" target="/270" port="/271"/>
+  <behavior:State name="nbDataToFetch_RCVD"/>
+  <behavior:State name="nbAnsweredReqs_RCVD"/>
+  <behavior:Port name="recv_nbAnsweredReqs"/>
+  <behavior:Transition name="t6" transitionMethod="step6" source="/273" target="/274" port="/275"/>
+  <behavior:State name="nbAnsweredReqs_RCVD"/>
+  <behavior:State name="redirection_SENT"/>
+  <behavior:Port name="send_redirection"/>
+  <behavior:Transition name="t7" transitionMethod="step7" source="/277" target="/278" port="/279"/>
+  <behavior:State name="redirection_SENT"/>
+  <behavior:State name="userID_SENT"/>
+  <behavior:Port name="send_userID"/>
+  <behavior:Transition name="t8" transitionMethod="step8" source="/281" target="/282" port="/283"/>
+  <behavior:State name="userID_SENT"/>
+  <behavior:State name="dataQty_SENT"/>
+  <behavior:Port name="send_dataQty"/>
+  <behavior:Transition name="loop_back" transitionMethod="loopBack" source="/285" target="/9" type="internal"/>
+  <behavior:State name="dataQty_SENT"/>
+  <behavior:State name="requestedData_RCVD"/>
+  <behavior:State name="cacheSize_RCVD"/>
+  <behavior:State name="foundInCache_SENT"/>
+  <behavior:Port name="recv_requestedData"/>
+  <behavior:Port name="recv_cacheSize"/>
+  <behavior:Port name="send_foundInCache"/>
+  <behavior:Transition name="t1" transitionMethod="step1" source="/11" target="/293" port="/294"/>
+  <behavior:State name="requestedData_RCVD"/>
+  <behavior:Port name="recv_requestedData"/>
+  <behavior:Transition name="t2" transitionMethod="step2" source="/296" target="/297" port="/298"/>
+  <behavior:State name="requestedData_RCVD"/>
+  <behavior:State name="cacheSize_RCVD"/>
+  <behavior:Port name="recv_cacheSize"/>
+  <behavior:Transition name="t3" transitionMethod="step3" source="/300" target="/301" port="/302"/>
+  <behavior:State name="cacheSize_RCVD"/>
+  <behavior:State name="foundInCache_SENT"/>
+  <behavior:Port name="send_foundInCache"/>
+  <behavior:Transition name="loop_back" transitionMethod="loopBack" source="/304" target="/11" type="internal"/>
+  <behavior:State name="foundInCache_SENT"/>
+  <behavior:State name="requested_time_RCVD"/>
+  <behavior:State name="resulting_time_RCVD"/>
+  <behavior:State name="enabled_RCVD"/>
+  <behavior:State name="knob_SENT"/>
+  <behavior:Port name="recv_requested_time"/>
+  <behavior:Port name="recv_resulting_time"/>
+  <behavior:Port name="recv_enabled"/>
+  <behavior:Port name="send_knob"/>
+  <behavior:Transition name="t1" transitionMethod="step1" source="/13" target="/314" port="/315"/>
+  <behavior:State name="requested_time_RCVD"/>
+  <behavior:Port name="recv_requested_time"/>
+  <behavior:Transition name="t2" transitionMethod="step2" source="/317" target="/318" port="/319"/>
+  <behavior:State name="requested_time_RCVD"/>
+  <behavior:State name="resulting_time_RCVD"/>
+  <behavior:Port name="recv_resulting_time"/>
+  <behavior:Transition name="t3" transitionMethod="step3" source="/321" target="/322" port="/323"/>
+  <behavior:State name="resulting_time_RCVD"/>
+  <behavior:State name="enabled_RCVD"/>
+  <behavior:Port name="recv_enabled"/>
+  <behavior:Transition name="t4" transitionMethod="step4" source="/325" target="/326" port="/327"/>
+  <behavior:State name="enabled_RCVD"/>
+  <behavior:State name="knob_SENT"/>
+  <behavior:Port name="send_knob"/>
+  <behavior:Transition name="loop_back" transitionMethod="loopBack" source="/329" target="/13" type="internal"/>
+  <behavior:State name="knob_SENT"/>
+  <behavior:State name="authProvided_RCVD"/>
+  <behavior:State name="isAuthenticated_SENT"/>
+  <behavior:Port name="recv_authProvided"/>
+  <behavior:Port name="send_isAuthenticated"/>
+  <behavior:Transition name="t1" transitionMethod="step1" source="/15" target="/335" port="/336"/>
+  <behavior:State name="authProvided_RCVD"/>
+  <behavior:Port name="recv_authProvided"/>
+  <behavior:Transition name="t2" transitionMethod="step2" source="/338" target="/339" port="/340"/>
+  <behavior:State name="authProvided_RCVD"/>
+  <behavior:State name="isAuthenticated_SENT"/>
+  <behavior:Port name="send_isAuthenticated"/>
+  <behavior:Transition name="loop_back" transitionMethod="loopBack" source="/342" target="/15" type="internal"/>
+  <behavior:State name="isAuthenticated_SENT"/>
+  <behavior:State name="redirection_dp_RCVD"/>
+  <behavior:State name="userID_RCVD"/>
+  <behavior:State name="dataQty_RCVD"/>
+  <behavior:State name="cacheResponse_RCVD"/>
+  <behavior:State name="userID_SENT"/>
+  <behavior:State name="cacheRequest_SENT"/>
+  <behavior:State name="oneLessPendingRequest_SENT"/>
+  <behavior:State name="timeSpentOnReq_SENT"/>
+  <behavior:State name="enableTimeReading_SENT"/>
+  <behavior:Port name="recv_redirection_dp"/>
+  <behavior:Port name="recv_userID"/>
+  <behavior:Port name="recv_dataQty"/>
+  <behavior:Port name="recv_cacheResponse"/>
+  <behavior:Port name="send_userID"/>
+  <behavior:Port name="send_cacheRequest"/>
+  <behavior:Port name="send_oneLessPendingRequest"/>
+  <behavior:Port name="send_timeSpentOnReq"/>
+  <behavior:Port name="send_enableTimeReading"/>
+  <behavior:Transition name="t1" transitionMethod="step1" source="/17" target="/362" port="/363"/>
+  <behavior:State name="redirection_dp_RCVD"/>
+  <behavior:Port name="recv_redirection_dp"/>
+  <behavior:Transition name="t2" transitionMethod="step2" source="/365" target="/366" port="/367"/>
+  <behavior:State name="redirection_dp_RCVD"/>
+  <behavior:State name="userID_RCVD"/>
+  <behavior:Port name="recv_userID"/>
+  <behavior:Transition name="t3" transitionMethod="step3" source="/369" target="/370" port="/371"/>
+  <behavior:State name="userID_RCVD"/>
+  <behavior:State name="dataQty_RCVD"/>
+  <behavior:Port name="recv_dataQty"/>
+  <behavior:Transition name="t4" transitionMethod="step4" source="/373" target="/374" port="/375"/>
+  <behavior:State name="dataQty_RCVD"/>
+  <behavior:State name="cacheResponse_RCVD"/>
+  <behavior:Port name="recv_cacheResponse"/>
+  <behavior:Transition name="t5" transitionMethod="step5" source="/377" target="/378" port="/379"/>
+  <behavior:State name="cacheResponse_RCVD"/>
+  <behavior:State name="userID_SENT"/>
+  <behavior:Port name="send_userID"/>
+  <behavior:Transition name="t6" transitionMethod="step6" source="/381" target="/382" port="/383"/>
+  <behavior:State name="userID_SENT"/>
+  <behavior:State name="cacheRequest_SENT"/>
+  <behavior:Port name="send_cacheRequest"/>
+  <behavior:Transition name="t7" transitionMethod="step7" source="/385" target="/386" port="/387"/>
+  <behavior:State name="cacheRequest_SENT"/>
+  <behavior:State name="oneLessPendingRequest_SENT"/>
+  <behavior:Port name="send_oneLessPendingRequest"/>
+  <behavior:Transition name="t8" transitionMethod="step8" source="/389" target="/390" port="/391"/>
+  <behavior:State name="oneLessPendingRequest_SENT"/>
+  <behavior:State name="timeSpentOnReq_SENT"/>
+  <behavior:Port name="send_timeSpentOnReq"/>
+  <behavior:Transition name="t9" transitionMethod="step9" source="/393" target="/394" port="/395"/>
+  <behavior:State name="timeSpentOnReq_SENT"/>
+  <behavior:State name="enableTimeReading_SENT"/>
+  <behavior:Port name="send_enableTimeReading"/>
+  <behavior:Transition name="loop_back" transitionMethod="loopBack" source="/397" target="/17" type="internal"/>
+  <behavior:State name="enableTimeReading_SENT"/>
+  <behavior:State name="httpResponse_RCVD"/>
+  <behavior:State name="startTime_RCVD"/>
+  <behavior:State name="endTime_RCVD"/>
+  <behavior:State name="id_RCVD"/>
+  <behavior:State name="maxNbData_RCVD"/>
+  <behavior:State name="fromUserToInternet_SENT"/>
+  <behavior:Port name="sense_httpResponse" type="spontaneous"/>
+  <behavior:Port name="recv_startTime"/>
+  <behavior:Port name="recv_endTime"/>
+  <behavior:Port name="recv_id"/>
+  <behavior:Port name="recv_maxNbData"/>
+  <behavior:Port name="actuate_fromUserToInternet"/>
+  <behavior:Transition name="t1" transitionMethod="step1" source="/19" target="/411" port="/412" type="spontaneous"/>
+  <behavior:State name="httpResponse_RCVD"/>
+  <behavior:Port name="sense_httpResponse" type="spontaneous"/>
+  <behavior:Transition name="t2" transitionMethod="step2" source="/414" target="/415" port="/416"/>
+  <behavior:State name="httpResponse_RCVD"/>
+  <behavior:State name="startTime_RCVD"/>
+  <behavior:Port name="recv_startTime"/>
+  <behavior:Transition name="t3" transitionMethod="step3" source="/418" target="/419" port="/420"/>
+  <behavior:State name="startTime_RCVD"/>
+  <behavior:State name="endTime_RCVD"/>
+  <behavior:Port name="recv_endTime"/>
+  <behavior:Transition name="t4" transitionMethod="step4" source="/422" target="/423" port="/424"/>
+  <behavior:State name="endTime_RCVD"/>
+  <behavior:State name="id_RCVD"/>
+  <behavior:Port name="recv_id"/>
+  <behavior:Transition name="t5" transitionMethod="step5" source="/426" target="/427" port="/428"/>
+  <behavior:State name="id_RCVD"/>
+  <behavior:State name="maxNbData_RCVD"/>
+  <behavior:Port name="recv_maxNbData"/>
+  <behavior:Transition name="t6" transitionMethod="step6" source="/430" target="/431" port="/432"/>
+  <behavior:State name="maxNbData_RCVD"/>
+  <behavior:State name="fromUserToInternet_SENT"/>
+  <behavior:Port name="actuate_fromUserToInternet"/>
+  <behavior:Transition name="loop_back" transitionMethod="loopBack" source="/434" target="/19" type="internal"/>
+  <behavior:State name="fromUserToInternet_SENT"/>
+  <behavior:State name="fromInternet_RCVD"/>
+  <behavior:State name="wpServed_RCVD"/>
+  <behavior:State name="maxNbData_RCVD"/>
+  <behavior:State name="nbData_SENT"/>
+  <behavior:State name="userID_SENT"/>
+  <behavior:State name="userAuth_SENT"/>
+  <behavior:State name="fromServerToInternet_SENT"/>
+  <behavior:Port name="sense_fromInternet" type="spontaneous"/>
+  <behavior:Port name="recv_wpServed"/>
+  <behavior:Port name="recv_maxNbData"/>
+  <behavior:Port name="send_nbData"/>
+  <behavior:Port name="send_userID"/>
+  <behavior:Port name="send_userAuth"/>
+  <behavior:Port name="actuate_fromServerToInternet"/>
+  <behavior:Transition name="t1" transitionMethod="step1" source="/21" target="/450" port="/451" type="spontaneous"/>
+  <behavior:State name="fromInternet_RCVD"/>
+  <behavior:Port name="sense_fromInternet" type="spontaneous"/>
+  <behavior:Transition name="t2" transitionMethod="step2" source="/453" target="/454" port="/455"/>
+  <behavior:State name="fromInternet_RCVD"/>
+  <behavior:State name="wpServed_RCVD"/>
+  <behavior:Port name="recv_wpServed"/>
+  <behavior:Transition name="t3" transitionMethod="step3" source="/457" target="/458" port="/459"/>
+  <behavior:State name="wpServed_RCVD"/>
+  <behavior:State name="maxNbData_RCVD"/>
+  <behavior:Port name="recv_maxNbData"/>
+  <behavior:Transition name="t4" transitionMethod="step4" source="/461" target="/462" port="/463"/>
+  <behavior:State name="maxNbData_RCVD"/>
+  <behavior:State name="nbData_SENT"/>
+  <behavior:Port name="send_nbData"/>
+  <behavior:Transition name="t5" transitionMethod="step5" source="/465" target="/466" port="/467"/>
+  <behavior:State name="nbData_SENT"/>
+  <behavior:State name="userID_SENT"/>
+  <behavior:Port name="send_userID"/>
+  <behavior:Transition name="t6" transitionMethod="step6" source="/469" target="/470" port="/471"/>
+  <behavior:State name="userID_SENT"/>
+  <behavior:State name="userAuth_SENT"/>
+  <behavior:Port name="send_userAuth"/>
+  <behavior:Transition name="t7" transitionMethod="step7" source="/473" target="/474" port="/475"/>
+  <behavior:State name="userAuth_SENT"/>
+  <behavior:State name="fromServerToInternet_SENT"/>
+  <behavior:Port name="actuate_fromServerToInternet"/>
+  <behavior:Transition name="loop_back" transitionMethod="loopBack" source="/477" target="/21" type="internal"/>
+  <behavior:State name="fromServerToInternet_SENT"/>
+</xmi:XMI>
