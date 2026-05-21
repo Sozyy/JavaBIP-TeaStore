@@ -42,7 +42,8 @@ helper context Chips!program def: blockDeclarations() : Sequence(OclAny) =
     self.system.system_statements
         ->select(s |
               s.oclIsKindOf(Chips!logical_declaration)
-           or s.oclIsKindOf(Chips!physical_declaration))
+           or s.oclIsKindOf(Chips!physical_declaration)
+           or s.oclIsKindOf(Chips!object_declaration))
         ->asSequence();
 
 -- Discriminant logical/physical.
@@ -60,27 +61,31 @@ helper context OclAny def: componentName() : String =
 -- Séquence ordonnée des "steps" d'une déclaration :
 --   sensors -> parameters -> outputs -> actuators
 helper context OclAny def: steps() : Sequence(OclAny) =
-    let sensors : Sequence(OclAny) =
-        if self.isPhysicalDecl() then
-            self.def.sensor->asSequence()
-        else
-            Sequence{}
-        endif
-    in
-    let params : Sequence(OclAny) =
-        self.def.parameters->asSequence()
-    in
-    let outputs : Sequence(OclAny) =
-        self.def.outputs->asSequence()
-    in
-    let actuators : Sequence(OclAny) =
-        if self.isPhysicalDecl() then
-            self.def.actuator->asSequence()
-        else
-            Sequence{}
-        endif
-    in
-    sensors->union(params)->union(outputs)->union(actuators);
+    if self.isObjectDecl() then
+        Sequence{}
+    else
+        let sensors : Sequence(OclAny) =
+            if self.isPhysicalDecl() then
+                self.def.sensor->asSequence()
+            else
+                Sequence{}
+            endif
+        in
+        let params : Sequence(OclAny) =
+            self.def.parameters->asSequence()
+        in
+        let outputs : Sequence(OclAny) =
+            self.def.outputs->asSequence()
+        in
+        let actuators : Sequence(OclAny) =
+            if self.isPhysicalDecl() then
+                self.def.actuator->asSequence()
+            else
+                Sequence{}
+            endif
+        in
+        sensors->union(params)->union(outputs)->union(actuators)
+    endif;
 
 helper context OclAny def: stepCount() : Integer =
     self.steps()->size();
@@ -199,6 +204,12 @@ helper context OclAny def: expandedComponents() : Sequence(OclAny) =
     else
         Sequence{self}
     endif;
+
+-- HELPERS PALIER 5
+
+helper context OclAny def: isObjectDecl() : Boolean =
+    self.oclIsKindOf(Chips!object_declaration);
+
 
 
 -- =====================================================================
@@ -372,17 +383,21 @@ lazy rule StepPort {
 
 helper context OclAny def: buildTransitionsFor(initSt : OclAny) : Sequence(OclAny) =
     let stepsSeq : Sequence(OclAny) = self.steps() in
-    let result : TupleType(idx : Integer, transitions : Sequence(OclAny)) =
-        stepsSeq->iterate(s;
-            acc : TupleType(idx : Integer, transitions : Sequence(OclAny)) =
-                Tuple{ idx = 0, transitions = Sequence{} } |
-            Tuple{
-                idx = acc.idx + 1,
-                transitions = acc.transitions->append(
-                    thisModule.TransitionToStep(self, s, acc.idx + 1, initSt))
-            })
-    in
-    result.transitions->append(thisModule.LoopBackTransition(self, initSt));
+    if stepsSeq->isEmpty() then
+        Sequence{}
+    else
+        let result : TupleType(idx : Integer, transitions : Sequence(OclAny)) =
+            stepsSeq->iterate(s;
+                acc : TupleType(idx : Integer, transitions : Sequence(OclAny)) =
+                    Tuple{ idx = 0, transitions = Sequence{} } |
+                Tuple{
+                    idx = acc.idx + 1,
+                    transitions = acc.transitions->append(
+                        thisModule.TransitionToStep(self, s, acc.idx + 1, initSt))
+                })
+        in
+        result.transitions->append(thisModule.LoopBackTransition(self, initSt))
+    endif;
 
 lazy rule TransitionToStep {
     from
@@ -426,6 +441,31 @@ lazy rule LoopBackTransition {
         )
 }
 
+-- RULE PALIER 5
+
+rule ObjectDeclaration2ComponentType {
+    from
+        d : Chips!object_declaration
+        (not d.isArrayDecl() or d.arraySize() <= 0)
+    to
+        c : JavaBIP!ComponentType (
+            name          <- d.componentName(),
+            javaClassName <- 'chips.object.' + d.componentName(),
+            cardinality   <- '1',
+            constructors  <- '()',
+            initialState  <- initSt,
+            states        <- Sequence{initSt},
+            ports         <- Sequence{},
+            transitions   <- Sequence{},
+            guards        <- Sequence{},
+            definitions   <- ''
+        ),
+        initSt : JavaBIP!State (
+            name    <- 'INIT',
+            initial <- true
+        )
+}
+
 
 -- =====================================================================
 -- LAZY RULES PALIER 4a : DÉCLARATIONS ARRAY
@@ -443,7 +483,10 @@ lazy rule ArrayDeclAtIndex {
     to
         c : JavaBIP!ComponentType (
             name          <- d.componentName() + '_' + i.toString(),
-            javaClassName <- (if d.isPhysicalDecl() then 'chips.physical.' else 'chips.logical.' endif)
+            javaClassName <- (if d.isPhysicalDecl() then 'chips.physical.'
+                              else if d.isObjectDecl() then 'chips.object.'
+                              else 'chips.logical.'
+                              endif endif)
                              + d.componentName() + '_' + i.toString(),
             cardinality   <- '1',
             constructors  <- '()',
@@ -491,17 +534,21 @@ lazy rule ArrayStepPort {
 
 helper context OclAny def: buildArrayTransitions(arrIdx : Integer, initSt : OclAny) : Sequence(OclAny) =
     let stepsSeq : Sequence(OclAny) = self.steps() in
-    let result : TupleType(idx : Integer, transitions : Sequence(OclAny)) =
-        stepsSeq->iterate(s;
-            acc : TupleType(idx : Integer, transitions : Sequence(OclAny)) =
-                Tuple{ idx = 0, transitions = Sequence{} } |
-            Tuple{
-                idx = acc.idx + 1,
-                transitions = acc.transitions->append(
-                    thisModule.ArrayTransitionToStep(self, s, acc.idx + 1, arrIdx, initSt))
-            })
-    in
-    result.transitions->append(thisModule.ArrayLoopBackTransition(self, arrIdx, initSt));
+    if stepsSeq->isEmpty() then
+        Sequence{}
+    else
+        let result : TupleType(idx : Integer, transitions : Sequence(OclAny)) =
+            stepsSeq->iterate(s;
+                acc : TupleType(idx : Integer, transitions : Sequence(OclAny)) =
+                    Tuple{ idx = 0, transitions = Sequence{} } |
+                Tuple{
+                    idx = acc.idx + 1,
+                    transitions = acc.transitions->append(
+                        thisModule.ArrayTransitionToStep(self, s, acc.idx + 1, arrIdx, initSt))
+                })
+        in
+        result.transitions->append(thisModule.ArrayLoopBackTransition(self, arrIdx, initSt))
+    endif;
 
 lazy rule ArrayTransitionToStep {
     from
