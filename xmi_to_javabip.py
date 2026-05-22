@@ -7,6 +7,11 @@ JavaBIP produit par la transformation Chips → JavaBIP.
 
 Usage:
     python3 xmi_to_javabip.py <model.xmi> <output_directory> [--package NAME] [--glue-class NAME]
+    python3 xmi_to_javabip.py <model.xmi> --src-root <maven_src_root> [--package NAME] [--glue-class NAME]
+
+Avec --src-root, le répertoire de sortie effectif est <src_root>/<package/as/path>/,
+ce qui permet de déposer directement les sources dans un projet Maven existant
+(ex: --src-root myproject/src/main/java --package com.example.generated).
 
 Le script produit :
   * Une classe Java par ComponentType (avec annotations @Port, @ComponentType,
@@ -201,7 +206,7 @@ def parse_port_ref_pair(pr1, pr2, resolve):
 
 # Nom de la classe Java cible (CamelCase à partir du name du composant)
 def class_name_for(comp_name):
-    """Convertit 'umachine' → 'Umachine', 'uainterpreter' → 'Uainterpreter'."""
+    """Convertit 'umachine' -> 'Umachine', 'uainterpreter' -> 'Uainterpreter'."""
     # On garde simple : majuscule sur la première lettre, le reste inchangé.
     # L'utilisateur peut renommer plus tard s'il préfère un autre style.
     if not comp_name:
@@ -209,9 +214,15 @@ def class_name_for(comp_name):
     return comp_name[0].upper() + comp_name[1:]
 
 
-def generate_component_java(comp, package):
+def generate_component_java(comp, package, data_wires):
     """Génère le code Java d'une classe @ComponentType."""
     cls_name = class_name_for(comp['name'])
+
+    # Port → data_name pour les DataWires dont ce composant est la destination
+    recv_data = {}
+    for (_, _, to_c, to_p) in data_wires:
+        if to_c == comp['name']:
+            recv_data[to_p] = to_p.split('_', 1)[1] if '_' in to_p else to_p
 
     # --- En-tête ---
     lines = [
@@ -219,17 +230,22 @@ def generate_component_java(comp, package):
         '',
         'import org.javabip.annotations.*;',
         'import org.javabip.api.PortType;',
-        'import org.javabip.api.Data;',
-        '',     # TODO : importer DataOut si on a des getters @Data
+        'import org.javabip.api.DataOut;',
+        '', 
     ]
 
     # --- @Ports : liste des ports avec leur type ---
     lines.append('@Ports({')
     port_decls = []
+    declared_ports = set()
     for p in comp['ports']:
-        port_type = p['type']
-        # PortType.enforceable / PortType.spontaneous
-        port_decls.append(f'    @Port(name = "{p["name"]}", type = PortType.{port_type})')
+        port_decls.append(f'    @Port(name = "{p["name"]}", type = PortType.{p["type"]})')
+        declared_ports.add(p['name'])
+    # Les transitions sans port (loop_back / internal) ont besoin d'un port PortType.internal
+    for t in comp['transitions']:
+        if (t['type'] == 'internal' or t['port'] is None) and t['name'] not in declared_ports:
+            port_decls.append(f'    @Port(name = "{t["name"]}", type = PortType.enforceable)')
+            declared_ports.add(t['name'])
     lines.append(',\n'.join(port_decls))
     lines.append('})')
 
@@ -248,19 +264,15 @@ def generate_component_java(comp, package):
     lines.append('    // === TRANSITIONS ===')
     lines.append('')
     for t in comp['transitions']:
-        # Pour la transition "internal" (loop_back), pas de port à indiquer.
-        if t['type'] == 'internal' or t['port'] is None:
-            lines.append(f'    @Transition(name = "{t["name"]}", source = "{t["source"]}", target = "{t["target"]}", guard = "")')
-        else:
-            # Note : JavaBIP infère souvent le port à partir du nom de la transition,
-            # mais on est explicite ici pour éviter les ambiguïtés (notre name="t1"
-            # diffère du port qu'on veut faire tirer).
-            # On utilise donc le NOM DU PORT comme name de la transition,
-            # ce qui est la convention JavaBIP standard quand un port déclenche
-            # exactement une transition.
-            lines.append(f'    @Transition(name = "{t["port"]}", source = "{t["source"]}", target = "{t["target"]}", guard = "")')
+        port_name = t['port'] if t['port'] is not None else t['name']
+        lines.append(f'    @Transition(name = "{port_name}", source = "{t["source"]}", target = "{t["target"]}", guard = "")')
         method = t['transition_method'] or t['name']
-        lines.append(f'    public void {method}() {{')
+        data_name = recv_data.get(port_name)
+        if data_name:
+            lines.append(f'    public void {method}(@Data(name = "{data_name}") Object {data_name}) {{')
+        else:
+            lines.append(f'    public void {method}() {{')
+        lines.append(f'        System.out.println("[{cls_name}] {t["source"]} -> {t["target"]} (port: {port_name})");')
         lines.append('        // TODO: logique de la transition')
         lines.append('    }')
         lines.append('')
@@ -297,8 +309,9 @@ def generate_glue_java(model_name, components, data_wires, require_rules,
     name_to_cls = {c['name']: class_name_for(c['name']) for c in components}
 
     lines = [
-        f'package {package};',
+        f'package {package}.glue;',
         '',
+        f'import {package}.*;',
         'import org.javabip.glue.TwoSynchronGlueBuilder;',
         '',
         f'public class {glue_class_name} extends TwoSynchronGlueBuilder {{',
@@ -340,6 +353,80 @@ def generate_glue_java(model_name, components, data_wires, require_rules,
     lines.append('')
     return '\n'.join(lines)
 
+def generate_main_java(package, glue_class_name, components):
+    """Génère une classe Main avec un main() qui instancie le glue et démarre le moteur."""
+    reg_lines = []
+    for comp in components:
+        cls = class_name_for(comp['name'])
+        var_name = comp['name'][0].lower() + comp['name'][1:]
+
+        reg_lines.append(f'            {cls} {var_name} = new {cls}();')
+        # reg_lines.append(f'            engine.register({var_name}, "{var_name}", true);')
+
+    reg_lines.append('')
+
+    for comp in components:
+        cls = class_name_for(comp['name'])
+        var_name = comp['name'][0].lower() + comp['name'][1:]
+        reg_lines.append(f'            engine.register({var_name}, "{var_name}", true);')
+
+    lines = [
+        f'package {package}.executor;',
+        '',
+        f'import {package}.*;',
+        f'import {package}.glue.*;',
+        'import akka.actor.ActorSystem;',
+        'import org.javabip.api.BIPEngine;',
+        'import org.javabip.api.BIPGlue;',
+        'import org.javabip.engine.factory.EngineFactory;',
+        '',
+        'public class Main {',
+        '    private ActorSystem system;',
+        '    private EngineFactory engineFactory;',
+        '',
+        '    private void initialize() {',
+        '        system = ActorSystem.create("BIPSystem");',
+        '        engineFactory = new EngineFactory(system);',
+        '    }',
+        '',
+        '    private void cleanup() {',
+        '        if (system != null) {',
+        '            system.terminate();',
+        '        }',
+        '    }',
+        '',
+        '    public void runDemo() {',
+        '        BIPEngine engine = null;',
+        '        initialize();',
+        '',
+        '        try {',
+        f'            BIPGlue glue = new {glue_class_name}().build();',
+        '            engine = engineFactory.create("glue", glue);',
+        '',
+    ]
+
+    lines.extend(reg_lines)
+    lines += [
+        '',
+        '            engine.start();',
+        '            Thread.sleep(10000); // TODO: remplacer par une condition d\'arrêt appropriée',
+        '            engine.stop();',
+        '            engineFactory.destroy(engine);',
+        '        } catch (Exception e) {',
+        '            System.err.println(e.getMessage());',
+        '        } finally {',
+        '            cleanup();',
+        '        }',
+        '    }',
+        '',
+        '    public static void main(String[] args) {',
+        '        new Main().runDemo();',
+        '    }',
+        '}',
+        '',
+    ]
+    return '\n'.join(lines)
+
 
 # =============================================================================
 # MAIN
@@ -347,34 +434,54 @@ def generate_glue_java(model_name, components, data_wires, require_rules,
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Génère du code Java JavaBIP à partir d\'un XMI JavaBIP.')
-    parser.add_argument('xmi', help='Chemin vers le fichier XMI JavaBIP')
-    parser.add_argument('outdir', help='Répertoire de sortie pour les .java')
+        description='Generate JavaBIP code from a JavaBIP XMI file..')
+    parser.add_argument('xmi', help='Path to the XMI file')
+    parser.add_argument('outdir', nargs='?', default=None,
+                        help='Output directory for the java files')
+    parser.add_argument('--src-root', default=None,
+                        help='Maven source root (e.g. myproject/src/main/java). '
+                             'When set, files are written to <src-root>/<package/path>/. '
+                             'Takes precedence over outdir.')
     parser.add_argument('--package', default='generated',
-                        help='Nom du package Java (défaut : generated)')
+                        help='Package name (default : "generated")')
     parser.add_argument('--glue-class', default='GeneratedGlue',
-                        help='Nom de la classe de glue (défaut : GeneratedGlue)')
+                        help='Name of the glue class (default : GeneratedGlue)')
     args = parser.parse_args()
+
+    if args.src_root:
+        package_path = args.package.replace('.', os.sep)
+        effective_outdir = os.path.join(args.src_root, package_path)
+    elif args.outdir:
+        effective_outdir = args.outdir
+    else:
+        parser.error('outdir is required when --src-root is not specified.')
 
     print(f'Parsing {args.xmi}...')
     components, data_wires, require_rules = parse_xmi(args.xmi)
 
-    print(f'Trouvé : {len(components)} ComponentType, '
+    print(f'Found: {len(components)} ComponentType, '
           f'{len(data_wires)} DataWire, {len(require_rules)} RequireRule')
 
     # Créer le répertoire de sortie
-    os.makedirs(args.outdir, exist_ok=True)
+    os.makedirs(effective_outdir, exist_ok=True)
+    print(f'Output directory: {effective_outdir}')
+
+    # Filtre les composants vides pour ne pas générer de classes inutiles
+    components = [c for c in components if c['ports'] or c['transitions']]
+    print(f'After filtering empty components: {len(components)} ComponentType to generate')
 
     # Générer une classe par composant
     for comp in components:
         cls = class_name_for(comp['name'])
-        path = os.path.join(args.outdir, f'{cls}.java')
+        path = os.path.join(effective_outdir, f'{cls}.java')
         with open(path, 'w') as f:
-            f.write(generate_component_java(comp, args.package))
-        print(f'  Généré : {path}')
+            f.write(generate_component_java(comp, args.package, data_wires))
+        print(f'  Generated : {path}')
 
-    # Générer la classe de glue
-    glue_path = os.path.join(args.outdir, f'{args.glue_class}.java')
+    # Générer la classe de glue dans le sous-package "glue"
+    glue_dir = os.path.join(effective_outdir, 'glue')
+    os.makedirs(glue_dir, exist_ok=True)
+    glue_path = os.path.join(glue_dir, f'{args.glue_class}.java')
     with open(glue_path, 'w') as f:
         # On a besoin du nom du modèle pour la doc
         tree = ET.parse(args.xmi)
@@ -383,6 +490,16 @@ def main():
         model_name = model_elem.get('name', 'Unknown') if model_elem is not None else 'Unknown'
         f.write(generate_glue_java(model_name, components, data_wires,
                                    require_rules, args.package, args.glue_class))
+
+    # Générer la classe Main dans le sous-package "executor"
+    executor_dir = os.path.join(effective_outdir, 'executor')
+    os.makedirs(executor_dir, exist_ok=True)
+    main_path = os.path.join(executor_dir, 'Main.java')
+    with open(main_path, 'w') as f:
+        f.write(generate_main_java(args.package, args.glue_class, components))
+
+
+
     print(f'  Généré : {glue_path}')
 
 
