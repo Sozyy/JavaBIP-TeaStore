@@ -1,16 +1,52 @@
 # Adapteastore
 
-Adateastore works in communication with the Adaptable TeaStore, providing a way to adapt the cache size using a PID controller. 
+A JavaBIP controller that interfaces with the [Adaptable TeaStore](https://gitlab.inria.fr/adaptable-teastore/experimentation-platform) via the [AdaptiFlow](https://github.com/brice10/adaptiflow-core/tree/main) framework to dynamically adjust the image cache size.
 
-The communication between the Adapteastore and the Adaptable TeaStore is done using the Adaptiflow framework, which has specific components for the communication between the Adaptable TeaStore and another service, in this case the Adapteastore. 
-The framework is used in the PersistenceCollector and Bridge classes, letting the Adapteastore collect the information from the Adaptable TeaStore and send them to the PID controller.
+The controller monitors traffic metrics from the Adaptable TeaStore's persistence layer, feeds them into a BIP pipeline composed of a `DataProvider` and a `PIDController`, and sends the computed cache size back to the image service through REST.
 
-## Usage
+## Architecture
 
-To provide the necessary information for the Adapteastore, the Adapatble TeaStore services need to be running. 
-The Image and Persistence services are required for the Adapteastore to function properly.
+```
+ Adaptable TeaStore
+ ┌──────────────────────────────────┐
+ │  Persistence service (:8082)     │
+ │  Image service       (:8083)     │
+ └──────────┬───────────────┬───────┘
+            │ GET /metrics  │ POST /setCacheSize
+            │               │
+ Adapteastore (this project)
+ ┌──────────v───────────────^───────┐
+ │  PersistenceCollector            │  < AdaptiFlow IMetricsCollector
+ │         │ request delta          │
+ │       Bridge                     │  < AdaptiFlow Observer + BIP Component
+ │         │                        │
+ │  ┌──────v──────────────────┐     │
+ │  │  DataProvider           │     │
+ │  │  LRUCache (no JavaBIP)  │     │
+ │  │  PIDController          │     │
+ │  └──────────────┬──────────┘     │
+ │               newCacheSize       │
+ │         CacheUpdater             │
+ └──────────────────────────────────┘
+```
 
-Both services are modified from the original Adaptable TeaStore, the configuration files are located in the 'Sources/examples/docker/' directory, 
-and the 'docker-compose_default.yaml' file has been updated for the Persistence and Image services to be running respectively on ports 8082 and 8083, 
-as mentionned in the 'Main.java' file.
+### Role of AdaptiFlow
+
+**AdaptiFlow** is the communication framework between Adapteastore and the Adaptable TeaStore. It provides:
+
+- **`IMetricsCollector<T>`**: interface implemented by `PersistenceCollector` to collect REST metrics in a standardized way.
+- **Observer**: interface implemented by `Bridge` to receive metric updates and inject them into the BIP engine.
+
+This decouples the REST collection logic (AdaptiFlow) from the BIP adaptation logic (JavaBIP).
+
+### Execution Flow
+
+1. The polling loop (`Main`) calls `PersistenceCollector.collect()` every 2 seconds.
+2. If the request is not empty, `Bridge.update(delta)` is called.
+3. `Bridge` signals the BIP engine that data is available (`sendRequest` unblocked).
+4. The `DataProvider` processes the delta, simulates LRU hits/misses, and computes response time. (to be changed)
+5. The `PIDController` receives the response time and computes the new cache size.
+6. `Bridge` retrieves the computed size and returns it to `Main` via `waitForCycleAndGetCacheSize()`.
+7. `CacheUpdater` sends the new size to the image service via POST.
+8. Metrics are recorded for CSV export.
 
