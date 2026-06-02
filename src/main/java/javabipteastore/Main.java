@@ -91,7 +91,7 @@ public class Main {
             }
 
             // make the name depends on P, I and D
-            cache.exportHistoryCsv("/home/jbarthod/Documents/JavaBIPTesting/javabip-simon/src/main/java/TeaStoreWithConnector/output/cache_history_KP" + KP + "_KI" + KI + "_KD" + KD + ".csv");
+            cache.exportHistoryCsv("src/main/java/TeaStoreWithConnector/output/cache_history_KP" + KP + "_KI" + KI + "_KD" + KD + ".csv");
 
             engine.stop();
             engineFactory.destroy(engine);
@@ -118,6 +118,7 @@ public class Main {
 
         new Main().runDemo(); // run the demo with the initial values of KP, KI and KD
 
+        // testing a lot of configurations to find a good one (very long to run)
         /*for (float d = 0.0F; d < maxKD; d += stepKD) {
             for (float i = 0.0F; i < maxKI; i += stepKI) {
                 for (float p = stepKP; p < maxKP; p += stepKP) {

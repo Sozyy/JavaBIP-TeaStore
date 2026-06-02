@@ -40,7 +40,7 @@ public class CollectConnector {
     public void input1(@Data(name = "previousRequests") int[] previousRequests) {
         rec1 = true;
         whereWeAt += "1";
-//        System.out.printf("[CollectConnector %d] : input1 - %s - receive from previous connector : %s%n", id, whereWeAt, java.util.Arrays.toString(previousRequests));
+        System.out.printf("[CollectConnector %d] : input1 - %s - receive from previous connector : %s%n", id, whereWeAt, java.util.Arrays.toString(previousRequests));
         mergeRequests(previousRequests);
     }
 
@@ -61,7 +61,7 @@ public class CollectConnector {
     public void input3(@Data(name = "additionalRequests") int[] additionalRequests) {
         rec3 = true;
         whereWeAt += "3";
-//        System.out.printf("[CollectConnector %d] : input3 - %s - receive from client %d : %s%n", id, whereWeAt, id, java.util.Arrays.toString(additionalRequests));
+        System.out.printf("[CollectConnector %d] : input3 - %s - receive from client %d : %s%n", id, whereWeAt, id, java.util.Arrays.toString(additionalRequests));
         mergeRequests(additionalRequests);
     }
 
@@ -72,9 +72,9 @@ public class CollectConnector {
     public void sendUp() {
         whereWeAt += "Up";
         if (id == 1) {
-//            System.out.printf("[CollectConnector %d] : sendUp to server %s%n", id, java.util.Arrays.toString(requests));
+            System.out.printf("[CollectConnector %d] : sendUp to server %s%n", id, java.util.Arrays.toString(requests));
         } else {
-//            System.out.printf("[CollectConnector %d] : sendUp %s%n", id, java.util.Arrays.toString(requests));
+            System.out.printf("[CollectConnector %d] : sendUp %s%n", id, java.util.Arrays.toString(requests));
         }
     }
 
@@ -82,7 +82,7 @@ public class CollectConnector {
                 source = "SEND",
                 target = "IDLE")
     public void reset() {
-//        System.out.printf("[CollectConnector %d] : reset%n", id);
+        System.out.printf("[CollectConnector %d] : reset%n", id);
         requests = new int[maxClient];
         rec1 = false;
         rec2 = false;
