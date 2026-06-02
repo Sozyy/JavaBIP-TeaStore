@@ -1,4 +1,4 @@
-package TeaStoreWithConnector;
+package javabipteastore;
 
 import akka.actor.ActorSystem;
 import org.javabip.api.BIPEngine;

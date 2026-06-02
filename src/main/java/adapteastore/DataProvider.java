@@ -1,12 +1,18 @@
-package Adapteastore;
+package adapteastore;
 
-import TeaStoreWithConnector.LRUCache;
 import org.javabip.annotations.*;
 import org.javabip.api.DataOut;
 import org.javabip.api.PortType;
 
 import java.util.Random;
 
+
+/**
+ * DataProvider get a request from the Bridge and process the way it worked for the CollectiveTeaStore :
+ * Loads a number of random integers, this number is the request.
+ * Calculates a loading time depending on if the random integers were present or not in the LRUCache
+ * Send the processingTime to the PIDController which will give a new cache to communicate to the Bridge
+ */
 @Ports({
         @Port(name = "receiveRequest",      type = PortType.enforceable),
         @Port(name = "sendResponseTime",    type = PortType.enforceable),
@@ -27,28 +33,26 @@ public class DataProvider {
         this.imageUniverseSize = imageUniverseSize;
     }
 
-    // ===================
-    // === TRANSITIONS ===
-    // ===================
+    // === Transitions ===
 
     @Transition(name   = "receiveRequest",
-            source = "IDLE",
-            target = "PROCESSING")
+                source = "IDLE",
+                target = "PROCESSING")
     public void receiveRequest(@Data(name = "request") int nbImagesToLoad) {
 //        System.out.println("[DataProvider] IDLE -> PROCESSING - Received from Server : " + nbImagesToLoad + " images to load");
         processRequest(nbImagesToLoad);
     }
 
     @Transition(name   = "sendResponseTime",
-            source = "PROCESSING",
-            target = "WAITING_FOR_CACHE_SIZE")
+                source = "PROCESSING",
+                target = "WAITING_FOR_CACHE_SIZE")
     public void sendResponseTime() {
 //        System.out.println("[DataProvider] PROCESSING -> WAITING_FOR_CACHE_SIZE");
     }
 
     @Transition(name   = "receiveNewCacheSize",
-            source = "WAITING_FOR_CACHE_SIZE",
-            target = "READY")
+                source = "WAITING_FOR_CACHE_SIZE",
+                target = "READY")
     public void receiveNewCacheSize(@Data(name = "newCacheSize") int newCacheSize) {
         cache.setCapacity(newCacheSize);
 //        System.out.println(" > DataProvider - Received from Controller : " + newCacheSize + " new cache size");
@@ -56,15 +60,13 @@ public class DataProvider {
     }
 
     @Transition(name   = "notifyServer",
-            source = "READY",
-            target = "IDLE")
+                source = "READY",
+                target = "IDLE")
     public void notifyServer() {
 //        System.out.println("[DataProvider] READY -> IDLE");
     }
 
-    // ==================
     // === DATA WIRES ===
-    // ==================
 
     @Data(name = "responseTime", accessTypePort = DataOut.AccessType.any)
     public float getResponseTime() { return responseTime; }
@@ -72,9 +74,8 @@ public class DataProvider {
     @Data(name = "response", accessTypePort = DataOut.AccessType.any)
     public int response() { return loadedImages; }
 
-    // ===============
+
     // === HELPERS ===
-    // ===============
 
     public void processRequest(int nbImages) {
         int hits = 0;

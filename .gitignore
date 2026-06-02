@@ -1,7 +1,12 @@
 .gradle
 .idea
+.vscode
 
 apache-log4j-2.14.0-bin
+bin
 build
-gradle
-lib
+
+
+*.class
+*.csv
+

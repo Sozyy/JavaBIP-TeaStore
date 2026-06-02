@@ -1,4 +1,4 @@
-package Adapteastore;
+package adapteastore;
 
 import org.javabip.annotations.*;
 import org.javabip.api.DataOut;
@@ -13,23 +13,20 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Pont AdaptiFlow <-> JavaBIP.
+ * Bridge Adaptiflow <-> JavaBIP
  *
- * Cote AdaptiFlow : Observer<Integer> notifie par Event.observe() quand le collector
- * pousse une nouvelle valeur (= nombre d'images a traiter).
+ * Adaptiflow side : Observer<Integer> notified by Event.observe() when the collector pushes a new value.
  *
- * Cote BIP : deux ports (sendRequest / receiveResp) branches directement sur
- * DataProvider via SimpleBridgeGlue. La transition sendRequest n'a pas de garde :
- * elle bloque en interne sur dataAvailable jusqu'a ce qu'AdaptiFlow appelle update(),
- * ce qui permet au moteur BIP d'avoir toujours une interaction disponible et evite
- * le deadlock du moteur quand aucune interaction n'est activee.
+ * JavaBIP side : two ports connected on the DataProvider.
+ * sendRequest has no guard because it blocks on dataAvailable until Adaptiflow calls update(),
+ * it could be replaced by a spontaneous transition.
  *
- * Cycle complet :
+ * Complete cycle :
  *   1. event.observe() -> bridge.update(value) -> pendingMetric=value, signal dataAvailable
- *   2. sendRequest() se debloque, expose pendingMetric via @Data "request"
- *   3. DataProvider traite, PID calcule, DataProvider applique le nouveau cache
+ *   2. sendRequest() unlocks, expose pendingMetric via @Data "request"
+ *   3. DataProvider and PID work, DataProvider get the new cache
  *   4. DataProvider.notifyServer -> bridge.receiveResp() -> cycleCompleted=true
- *   5. waitForCycleAndGetCacheSize() debloque et renvoie la nouvelle capacite
+ *   5. waitForCycleAndGetCacheSize() unlocks and sends the new capacity
  */
 @Ports({
         @Port(name = "sendRequest", type = PortType.enforceable),
@@ -42,12 +39,12 @@ public class Bridge implements Observer<Integer> {
     private final LRUCache cache;
     private final ConditionEvaluator<Integer> conditionEvaluator;
 
-    // === Coordination AdaptiFlow <-> BIP ===
+    // Adaptiflow and JavaBIP coordination
     private final Lock lock = new ReentrantLock();
     private final Condition cycleDone     = lock.newCondition();
     private final Condition dataAvailable = lock.newCondition();
 
-    private volatile boolean hasNewData    = false;
+    private volatile boolean hasNewData     = false;
     private volatile boolean cycleCompleted = false;
     private volatile int     lastCacheSize  = -1;
 
@@ -56,9 +53,7 @@ public class Bridge implements Observer<Integer> {
         this.conditionEvaluator = new TrueEvaluator<>();
     }
 
-    // ============================================
-    // === Observer<Integer> (AdaptiFlow) =========
-    // ============================================
+    // === Observer<Integer> (AdaptiFlow) ===
 
     @Override
     public void update(Integer metricValue, String message) {
@@ -86,9 +81,7 @@ public class Bridge implements Observer<Integer> {
         return conditionEvaluator;
     }
 
-    // ============================================
-    // === Transitions BIP ========================
-    // ============================================
+    // === Transitions ===
 
     @Transition(name = "sendRequest", source = "IDLE", target = "SENT")
     public void sendRequest() throws InterruptedException {
@@ -117,32 +110,14 @@ public class Bridge implements Observer<Integer> {
         }
     }
 
-    // ============================================
-    // === Data wires =============================
-    // ============================================
+    // === Data wires ===
 
     @Data(name = "request", accessTypePort = DataOut.AccessType.any)
     public int getRequest() {
         return pendingMetric;
     }
 
-    // ============================================
-    // === API pour le thread externe =============
-    // ============================================
-
-    public int waitForCycleAndGetCacheSize() throws InterruptedException {
-        lock.lock();
-        try {
-            while (!cycleCompleted) {
-                cycleDone.await();
-            }
-            int size = lastCacheSize;
-            cycleCompleted = false;
-            return size;
-        } finally {
-            lock.unlock();
-        }
-    }
+    // === Helpers ===
 
     public int waitForCycleAndGetCacheSize(long timeoutMs) throws InterruptedException {
         lock.lock();

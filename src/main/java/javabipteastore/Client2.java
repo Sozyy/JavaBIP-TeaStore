@@ -1,4 +1,4 @@
-package TeaStoreWithConnector;
+package javabipteastore;
 
 import org.javabip.annotations.ComponentType;
 import org.javabip.annotations.Port;

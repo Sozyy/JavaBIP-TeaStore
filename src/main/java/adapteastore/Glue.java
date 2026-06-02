@@ -1,8 +1,8 @@
-package Adapteastore;
+package adapteastore;
 
 import org.javabip.glue.TwoSynchronGlueBuilder;
 
-public class SimpleBridgeGlue extends TwoSynchronGlueBuilder {
+public class Glue extends TwoSynchronGlueBuilder {
 
     @Override
     public void configure() {
@@ -15,7 +15,7 @@ public class SimpleBridgeGlue extends TwoSynchronGlueBuilder {
         // PID -> DataProvider
         synchron(PIDController.class, "sendCacheSize").to(DataProvider.class, "receiveNewCacheSize");
 
-        // DataProvider -> Bridge (retour direct)
+        // DataProvider -> Bridge
         synchron(DataProvider.class, "notifyServer").to(Bridge.class, "receiveResp");
 
         // Data wires

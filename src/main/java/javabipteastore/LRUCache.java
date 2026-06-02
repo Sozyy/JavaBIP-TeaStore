@@ -1,4 +1,4 @@
-package TeaStoreWithConnector;
+package javabipteastore;
 
 import java.io.IOException;
 import java.util.ArrayList;
