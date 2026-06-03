@@ -408,11 +408,9 @@ def generate_main_java(package, glue_class_name, components):
 ###
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='Generate JavaBIP code from a JavaBIP XMI file..')
+    parser = argparse.ArgumentParser(description='Generate JavaBIP code from a JavaBIP XMI file..')
     parser.add_argument('xmi', help='Path to the XMI file')
-    parser.add_argument('outdir', nargs='?', default=None,
-                        help='Output directory for the java files')
+    parser.add_argument('outdir', nargs='?', default=None, help='Output directory for the java files')
     parser.add_argument('--src-root', default=None,
                         help='Maven source root (e.g. myproject/src/main/java). '
                              'When set, files are written to <src-root>/<package/path>/. '
@@ -431,7 +429,7 @@ def main():
     else:
         parser.error('outdir is required when --src-root is not specified.')
 
-    print(f'Parsing {args.xmi}...')
+    print(f'Parsing {args.xmi}')
     components, data_wires, require_rules = parse_xmi(args.xmi)
 
     print(f'Found: {len(components)} ComponentType, '
@@ -458,17 +456,15 @@ def main():
         root = tree.getroot()
         model_elem = next((c for c in root if c.tag.endswith('JavaBIPModel')), None)
         model_name = model_elem.get('name', 'Unknown') if model_elem is not None else 'Unknown'
-        f.write(generate_glue_java(model_name, components, data_wires,
-                                   require_rules, args.package, args.glue_class))
+        f.write(generate_glue_java(model_name, components, data_wires, require_rules, args.package, args.glue_class))
+        print(f'  Generated : {glue_path}')
 
     executor_dir = os.path.join(effective_outdir, 'executor')
     os.makedirs(executor_dir, exist_ok=True)
     main_path = os.path.join(executor_dir, 'Main.java')
     with open(main_path, 'w') as f:
         f.write(generate_main_java(args.package, args.glue_class, components))
-
-    print(f'  Généré : {glue_path}')
-
+        print(f'  Generated : {main_path}')
 
 
 if __name__ == '__main__':
