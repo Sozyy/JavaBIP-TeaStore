@@ -17,4 +17,4 @@ run:
 
 chips_to_javabip:
 	./emftvm.sh $(INPUT_MM) $(OUTPUT_MM) $(INPUT_XMI) $(ATL) $(OUTPUT_XMI)
-	python3 xmi_to_javabip.py $(OUTPUT_XMI) generated_javabip
+	python3 xmi_to_javabip.py $(OUTPUT_XMI) generated

@@ -1,6 +1,12 @@
-*.idea
 *.project
 *.iml
+*.class
+
+.idea
 .vscode
+
 /save
 /src
+/generated_javabip
+/generated_java
+/generated
