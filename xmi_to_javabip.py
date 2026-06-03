@@ -2,8 +2,8 @@
 """
 xmi_to_javabip.py
 
-Génère du code Java JavaBIP à partir d'un modèle XMI conforme au métamodèle
-JavaBIP produit par la transformation Chips → JavaBIP.
+Generate JavaBIP project from an XMI model conforming to the JavaBIP metamodel.
+The output XMI file is produced by the ATL transformation CHIPS to JavaBIP.
 
 Usage:
     python3 xmi_to_javabip.py <model.xmi> <output_directory> [--package NAME] [--glue-class NAME]
@@ -13,13 +13,13 @@ Avec --src-root, le répertoire de sortie effectif est <src_root>/<package/as/pa
 ce qui permet de déposer directement les sources dans un projet Maven existant
 (ex: --src-root myproject/src/main/java --package com.example.generated).
 
-Le script produit :
-  * Une classe Java par ComponentType (avec annotations @Port, @ComponentType,
-    @Transition et @Data getters).
-  * Une classe Java de glue (héritant de TwoSynchronGlueBuilder) avec un
-    configure() qui appelle synchron(...).to(...) pour chaque RequireRule
-    et data(...).to(...) pour chaque DataWire.
+This script parses the XMI file to produce :
+  - A JavaBIP class per ComponentType (with @Port, @ComponentType, @Transition and @Data getters annotations).
+  - A glue Java class (extending TwoSynchronGlueBuilder) with a configure() that calls synchron(...).to(...) for each RequireRule and data(...).to(...) for each DataWire
+  - A Main class that initializes the BIP engine, registers all components, glue them together and starts the engine.
 
+Important note :
+  - The generated code is not working, only a base is generated and all of the Java logic is not done yet
 """
 
 
@@ -31,7 +31,6 @@ import xml.etree.ElementTree as ET
 from collections import OrderedDict
 
 
-# Namespaces utilisés dans le XMI JavaBIP
 NS = {
     'xmi':      'http://www.omg.org/XMI',
     'behavior': 'http://JavaBIP/behavior',
@@ -39,40 +38,32 @@ NS = {
 }
 
 
-# =============================================================================
-# PARSING DU XMI
-# =============================================================================
-
 def parse_xmi(xmi_path):
     """
-    Parse le fichier XMI et retourne :
-      - components : liste de dicts décrivant chaque ComponentType
-      - data_wires : liste de tuples (from_component, from_port, to_component, to_port)
-      - require_rules : liste de tuples (effect_component, effect_port, cause_component, cause_port)
+    Parses XMI files and returns :
+      - components : list of ComponentType
+      - data_wires : list of tuples (from_component, from_port, to_component, to_port)
+      - require_rules : list of tuples (effect_component, effect_port, cause_component, cause_port)
 
-    Le XMI référence ses sous-éléments via des indices XPath comme "/22".
-    On commence par construire une table indice → élément en parcourant les
-    enfants directs de la racine dans l'ordre du document.
+    The XMI references its subelements via indices as '\42'.
+    It builds an index table by iterating over the children of the root in order.
     """
     tree = ET.parse(xmi_path)
     root = tree.getroot()
 
-    # Table indice → élément. L'indice "/N" désigne le N-ième enfant à plat
-    # de la racine. Attention : le XMI XMI/EMF utilise des fragment URIs qui
-    # comptent à partir de 0 pour le premier enfant.
     children = list(root)
     index_to_elem = {f'/{i}': child for i, child in enumerate(children)}
 
     def resolve(ref):
-        """Résoudre une référence '/N' en élément XML."""
+        """Resolve a reference as '\42' into the corresponding XML."""
         return index_to_elem.get(ref.strip())
 
     def resolve_attr(elem, attr_name):
-        """Résoudre un attribut qui contient une référence '/N'."""
+        """Resolve an attribute that contains a reference '/N'."""
         ref = elem.get(attr_name)
         return resolve(ref) if ref else None
 
-    # --- Étape 1 : trouver le JavaBIPModel et son GlueSpec ---
+    # Find the JavaBIPModel
     model = None
     for child in children:
         if child.tag.endswith('JavaBIPModel'):
@@ -81,7 +72,7 @@ def parse_xmi(xmi_path):
     if model is None:
         raise RuntimeError("Aucun JavaBIPModel trouvé dans le XMI.")
 
-    # --- Étape 2 : extraire les ComponentTypes ---
+    # Extracts ComponentType
     component_refs = model.get('components', '').split()
     components = []
     for cref in component_refs:
@@ -90,7 +81,7 @@ def parse_xmi(xmi_path):
             continue
         components.append(parse_component(c, resolve, index_to_elem))
 
-    # --- Étape 3 : extraire la glue ---
+    # Glue
     glue_ref = model.get('glue')
     glue = resolve(glue_ref) if glue_ref else None
     data_wires = []
@@ -114,8 +105,8 @@ def parse_xmi(xmi_path):
             if rr is None:
                 continue
             effect_pr = resolve_attr(rr, 'effect')
-            # "causes" peut contenir plusieurs refs séparées par espace.
             cause_refs = rr.get('causes', '').split()
+
             for cref in cause_refs:
                 cause_pr = resolve(cref)
                 require_rules.append(parse_port_ref_pair(effect_pr, cause_pr, resolve))
@@ -124,7 +115,9 @@ def parse_xmi(xmi_path):
 
 
 def parse_component(elem, resolve, index_to_elem):
-    """Extrait toutes les infos d'un ComponentType."""
+    """
+    Gets informations from a ComponentType
+    """
     name = elem.get('name')
     java_class = elem.get('javaClassName') or name
     cardinality = elem.get('cardinality', '1')
@@ -132,7 +125,7 @@ def parse_component(elem, resolve, index_to_elem):
     initial_elem = resolve(initial_ref) if initial_ref else None
     initial_state = initial_elem.get('name') if initial_elem is not None else 'INIT'
 
-    # Liste d'états : on récupère juste leurs noms
+    # states
     state_refs = elem.get('states', '').split()
     states = []
     for sref in state_refs:
@@ -140,7 +133,7 @@ def parse_component(elem, resolve, index_to_elem):
         if s is not None:
             states.append(s.get('name'))
 
-    # Liste de ports : nom + type (enforceable par défaut)
+    # ports
     port_refs = elem.get('ports', '').split()
     ports = []
     for pref in port_refs:
@@ -151,7 +144,7 @@ def parse_component(elem, resolve, index_to_elem):
                 'type': p.get('type', 'enforceable'),
             })
 
-    # Transitions : nom, méthode, source/target (noms d'états), port (nom), type
+    # transitions
     transition_refs = elem.get('transitions', '').split()
     transitions = []
     for tref in transition_refs:
@@ -183,8 +176,7 @@ def parse_component(elem, resolve, index_to_elem):
 
 def parse_port_ref_pair(pr1, pr2, resolve):
     """
-    Parse une paire de PortRef. Retourne un tuple (comp1, port1, comp2, port2)
-    où comp* est le NOM du composant et port* le NOM du port.
+    Parses a pair of PortRef to a tuple (comp1, port1, comp2, port2)
     """
     def pr_to_pair(pr):
         if pr is None:
@@ -200,31 +192,29 @@ def parse_port_ref_pair(pr1, pr2, resolve):
     return (c1, p1, c2, p2)
 
 
-# =============================================================================
-# GÉNÉRATION DE CODE
-# =============================================================================
 
-# Nom de la classe Java cible (CamelCase à partir du name du composant)
+
+
 def class_name_for(comp_name):
-    """Convertit 'umachine' -> 'Umachine', 'uainterpreter' -> 'Uainterpreter'."""
-    # On garde simple : majuscule sur la première lettre, le reste inchangé.
-    # L'utilisateur peut renommer plus tard s'il préfère un autre style.
+    """
+    Put the first letter in uppercase
+    """
     if not comp_name:
         return 'Component'
     return comp_name[0].upper() + comp_name[1:]
 
 
 def generate_component_java(comp, package, data_wires):
-    """Génère le code Java d'une classe @ComponentType."""
+    """
+    Code generator for a ComponentType
+    """
     cls_name = class_name_for(comp['name'])
 
-    # Port → data_name pour les DataWires dont ce composant est la destination
     recv_data = {}
     for (_, _, to_c, to_p) in data_wires:
         if to_c == comp['name']:
             recv_data[to_p] = to_p.split('_', 1)[1] if '_' in to_p else to_p
 
-    # --- En-tête ---
     lines = [
         f'package {package};',
         '',
@@ -234,14 +224,14 @@ def generate_component_java(comp, package, data_wires):
         '', 
     ]
 
-    # --- @Ports : liste des ports avec leur type ---
     lines.append('@Ports({')
     port_decls = []
     declared_ports = set()
+
     for p in comp['ports']:
         port_decls.append(f'    @Port(name = "{p["name"]}", type = PortType.{p["type"]})')
         declared_ports.add(p['name'])
-    # Les transitions sans port (loop_back / internal) ont besoin d'un port PortType.internal
+
     for t in comp['transitions']:
         if (t['type'] == 'internal' or t['port'] is None) and t['name'] not in declared_ports:
             port_decls.append(f'    @Port(name = "{t["name"]}", type = PortType.enforceable)')
@@ -249,18 +239,15 @@ def generate_component_java(comp, package, data_wires):
     lines.append(',\n'.join(port_decls))
     lines.append('})')
 
-    # --- @ComponentType ---
     lines.append(f'@ComponentType(name = "{comp["name"]}", initial = "{comp["initial_state"]}")')
     lines.append(f'public class {cls_name} {{')
     lines.append('')
 
-    # --- Constructeur vide ---
     lines.append(f'    public {cls_name}() {{')
-    lines.append('        // TODO: initialisation des champs')
+    lines.append('        // TODO : vars declaration, initialization...')
     lines.append('    }')
     lines.append('')
 
-    # --- Transitions ---
     lines.append('    // === TRANSITIONS ===')
     lines.append('')
     for t in comp['transitions']:
@@ -273,27 +260,24 @@ def generate_component_java(comp, package, data_wires):
         else:
             lines.append(f'    public void {method}() {{')
         lines.append(f'        System.out.println("[{cls_name}] {t["source"]} -> {t["target"]} (port: {port_name})");')
-        lines.append('        // TODO: logique de la transition')
+        lines.append('        // TODO : transition logic')
         lines.append('    }')
         lines.append('')
 
-    # --- @Data getters : un par port "send_" ou "actuate_" ---
-    # Heuristique : chaque port qui envoie une donnée doit exposer un getter @Data.
+
     senders = [p for p in comp['ports']
                if p['name'].startswith('send_') or p['name'].startswith('actuate_')]
     if senders:
         lines.append('    // === DATA WIRES ===')
         lines.append('')
         for p in senders:
-            # On extrait le "vrai" nom de la donnée derrière le préfixe.
             data_name = p['name'].split('_', 1)[1] if '_' in p['name'] else p['name']
-            # Le type Java est inconnu ici (Chips n'apparaît plus à ce niveau),
-            # on met Object par défaut avec un commentaire à compléter.
+            # just a base, not the actual type
             getter_name = 'get' + data_name[0].upper() + data_name[1:]
             lines.append(f'    @Data(name = "{data_name}", accessTypePort = DataOut.AccessType.any)')
-            lines.append(f'    public Object {getter_name}() {{')   # TODO : ajouter le type de l'élément renvoyé
-            lines.append('        // TODO: retourner la valeur de la donnée')   
-            lines.append('        return null;')    # TODO : renvoyer le bon élément
+            lines.append(f'    public Object {getter_name}() {{')   # TODO get the not null ofc type
+            lines.append('        // TODO : return the actual data')   
+            lines.append('        return null;')    # TODO not return null ofc
             lines.append('    }')
             lines.append('')
 
@@ -302,10 +286,10 @@ def generate_component_java(comp, package, data_wires):
     return '\n'.join(lines)
 
 
-def generate_glue_java(model_name, components, data_wires, require_rules,
-                      package, glue_class_name):
-    """Génère la classe de glue (TwoSynchronGlueBuilder)."""
-    # Construire un mapping name → class_name pour pouvoir référencer .class
+def generate_glue_java(model_name, components, data_wires, require_rules, package, glue_class_name):
+    """
+    Glue class generator using TwoSynchronGlueBuilder
+    """
     name_to_cls = {c['name']: class_name_for(c['name']) for c in components}
 
     lines = [
@@ -320,11 +304,9 @@ def generate_glue_java(model_name, components, data_wires, require_rules,
         '    public void configure() {',
     ]
 
-    # --- Synchrons (issus des RequireRules) ---
     if require_rules:
         lines.append('')
         lines.append('        // === SYNCHRONS ===')
-        lines.append('        // Chaque RequireRule { effect, causes } => synchron(cause).to(effect)')
         lines.append('')
         for (eff_c, eff_p, cause_c, cause_p) in require_rules:
             eff_cls = name_to_cls.get(eff_c, eff_c)
@@ -332,7 +314,6 @@ def generate_glue_java(model_name, components, data_wires, require_rules,
             lines.append(f'        synchron({cause_cls}.class, "{cause_p}")'
                          f'.to({eff_cls}.class, "{eff_p}");')
 
-    # --- DataWires ---
     if data_wires:
         lines.append('')
         lines.append('        // === DATA WIRES ===')
@@ -340,9 +321,6 @@ def generate_glue_java(model_name, components, data_wires, require_rules,
         for (from_c, from_p, to_c, to_p) in data_wires:
             from_cls = name_to_cls.get(from_c, from_c)
             to_cls   = name_to_cls.get(to_c, to_c)
-            # data(SourceClass.class, "port_send").to(TargetClass.class, "port_recv")
-            # Le nom de la donnée côté destination est le nom du port "recv_X" sans préfixe.
-            # Idem côté source : send_X → X.
             from_data = from_p.split('_', 1)[1] if '_' in from_p else from_p
             to_data   = to_p.split('_', 1)[1] if '_' in to_p else to_p
             lines.append(f'        data({from_cls}.class, "{from_data}")'
@@ -354,7 +332,11 @@ def generate_glue_java(model_name, components, data_wires, require_rules,
     return '\n'.join(lines)
 
 def generate_main_java(package, glue_class_name, components):
-    """Génère une classe Main avec un main() qui instancie le glue et démarre le moteur."""
+    """
+    Generates a Main class that initializes the BIP engine, registers all components,
+    glue them together and starts the engine. 
+    The end condition is a single sleep but have to be changed.
+    """
     reg_lines = []
     for comp in components:
         cls = class_name_for(comp['name'])
@@ -409,7 +391,7 @@ def generate_main_java(package, glue_class_name, components):
     lines += [
         '',
         '            engine.start();',
-        '            Thread.sleep(10000); // TODO: remplacer par une condition d\'arrêt appropriée',
+        '            Thread.sleep(10000); // TODO : while (true) ?',
         '            engine.stop();',
         '            engineFactory.destroy(engine);',
         '        } catch (Exception e) {',
@@ -428,9 +410,7 @@ def generate_main_java(package, glue_class_name, components):
     return '\n'.join(lines)
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
+
 
 def main():
     parser = argparse.ArgumentParser(
