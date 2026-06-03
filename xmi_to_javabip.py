@@ -22,8 +22,6 @@ Important note :
   - The generated code is not working, only a base is generated and all of the Java logic is not done yet
 """
 
-
-
 import sys
 import os
 import argparse
@@ -70,7 +68,7 @@ def parse_xmi(xmi_path):
             model = child
             break
     if model is None:
-        raise RuntimeError("Aucun JavaBIPModel trouvé dans le XMI.")
+        raise RuntimeError("No JavaBIPModel found in the XMI")
 
     # Extracts ComponentType
     component_refs = model.get('components', '').split()
@@ -116,7 +114,7 @@ def parse_xmi(xmi_path):
 
 def parse_component(elem, resolve, index_to_elem):
     """
-    Gets informations from a ComponentType
+    Gets informations from a ComponentType.
     """
     name = elem.get('name')
     java_class = elem.get('javaClassName') or name
@@ -190,9 +188,6 @@ def parse_port_ref_pair(pr1, pr2, resolve):
     c1, p1 = pr_to_pair(pr1)
     c2, p2 = pr_to_pair(pr2)
     return (c1, p1, c2, p2)
-
-
-
 
 
 def class_name_for(comp_name):
@@ -410,7 +405,7 @@ def generate_main_java(package, glue_class_name, components):
     return '\n'.join(lines)
 
 
-
+###
 
 def main():
     parser = argparse.ArgumentParser(
@@ -442,15 +437,12 @@ def main():
     print(f'Found: {len(components)} ComponentType, '
           f'{len(data_wires)} DataWire, {len(require_rules)} RequireRule')
 
-    # Créer le répertoire de sortie
     os.makedirs(effective_outdir, exist_ok=True)
     print(f'Output directory: {effective_outdir}')
 
-    # Filtre les composants vides pour ne pas générer de classes inutiles
     components = [c for c in components if c['ports'] or c['transitions']]
     print(f'After filtering empty components: {len(components)} ComponentType to generate')
 
-    # Générer une classe par composant
     for comp in components:
         cls = class_name_for(comp['name'])
         path = os.path.join(effective_outdir, f'{cls}.java')
@@ -458,12 +450,10 @@ def main():
             f.write(generate_component_java(comp, args.package, data_wires))
         print(f'  Generated : {path}')
 
-    # Générer la classe de glue dans le sous-package "glue"
     glue_dir = os.path.join(effective_outdir, 'glue')
     os.makedirs(glue_dir, exist_ok=True)
     glue_path = os.path.join(glue_dir, f'{args.glue_class}.java')
     with open(glue_path, 'w') as f:
-        # On a besoin du nom du modèle pour la doc
         tree = ET.parse(args.xmi)
         root = tree.getroot()
         model_elem = next((c for c in root if c.tag.endswith('JavaBIPModel')), None)
@@ -471,14 +461,11 @@ def main():
         f.write(generate_glue_java(model_name, components, data_wires,
                                    require_rules, args.package, args.glue_class))
 
-    # Générer la classe Main dans le sous-package "executor"
     executor_dir = os.path.join(effective_outdir, 'executor')
     os.makedirs(executor_dir, exist_ok=True)
     main_path = os.path.join(executor_dir, 'Main.java')
     with open(main_path, 'w') as f:
         f.write(generate_main_java(args.package, args.glue_class, components))
-
-
 
     print(f'  Généré : {glue_path}')
 
