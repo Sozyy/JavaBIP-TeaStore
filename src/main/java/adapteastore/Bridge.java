@@ -4,6 +4,7 @@ import org.javabip.annotations.*;
 import org.javabip.api.DataOut;
 import org.javabip.api.PortType;
 
+import adapteastore.cache.ICache;
 import tools.spirals.cerberus237.adaptiflow.interfaces.ConditionEvaluator;
 import tools.spirals.cerberus237.adaptiflow.interfaces.Observer;
 import tools.spirals.cerberus237.adaptiflow.operators.TrueEvaluator;
@@ -36,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class Bridge implements Observer<Integer> {
 
     private volatile int pendingMetric = 0;
-    private final LRUCache cache;
+    private final ICache cache;
     private final ConditionEvaluator<Integer> conditionEvaluator;
 
     // Adaptiflow and JavaBIP coordination
@@ -48,7 +49,7 @@ public class Bridge implements Observer<Integer> {
     private volatile boolean cycleCompleted = false;
     private volatile int     lastCacheSize  = -1;
 
-    public Bridge(LRUCache cache) {
+    public Bridge(ICache cache) {
         this.cache = cache;
         this.conditionEvaluator = new TrueEvaluator<>();
     }

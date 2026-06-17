@@ -14,9 +14,6 @@ import java.time.Duration;
  *   - Returns 200 OK with a boolean body
  *     - true if the new size has been applied
  *     - false otherwise, null or negativ cache
- *
- * IMPORTANT NOTE !
- *   Actual PID works with a number of item but the endpoint expects bytes. PID logic must be reworked
  */
 public class CacheUpdater {
 
@@ -68,8 +65,7 @@ public class CacheUpdater {
             String body = resp.body() == null ? "" : resp.body().trim();
 
             if (status != 200) {
-                System.err.printf("[CacheUpdater] HTTP %d on %s (body='%s')%n",
-                        status, setCacheSizeEndpoint, body);
+                System.err.printf("[CacheUpdater] HTTP %d on %s (body='%s')%n", status, setCacheSizeEndpoint, body);
                 return UpdateResult.httpError(newCacheSize, status, body);
             }
 
