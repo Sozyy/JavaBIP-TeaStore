@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.github.brice10</groupId>
+  <artifactId>siphonix</artifactId>
+  <version>1.0.0</version>
+  <packaging>jar</packaging>
+  <name>SiphoniX</name>
+  <description>SiphoniX: autonomic manager for AdaptableTeaStore — includes JavaBIP/PID cache controller</description>
+
+  <properties>
+    <maven.compiler.source>11</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <slf4j.version>2.0.0</slf4j.version>
+  </properties>
+
+  <dependencies>
+
+    <!-- AdaptiFlow -->
+    <dependency>
+      <groupId>io.github.brice10</groupId>
+      <artifactId>adaptiflow</artifactId>
+      <version>1.0.2</version>
+    </dependency>
+    <dependency>
+      <groupId>io.github.brice10</groupId>
+      <artifactId>metricscollectorbase</artifactId>
+      <version>1.0.1</version>
+    </dependency>
+    <dependency>
+      <groupId>io.github.brice10</groupId>
+      <artifactId>adaptationactionsbase</artifactId>
+      <version>1.0.2</version>
+    </dependency>
+
+    <!-- JavaBIP (run install-javabip-jars.sh first) -->
+    <dependency>
+      <groupId>org.javabip</groupId>
+      <artifactId>org.javabip.api</artifactId>
+      <version>0.1.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.javabip</groupId>
+      <artifactId>org.javabip.engine.api</artifactId>
+      <version>0.1.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.javabip</groupId>
+      <artifactId>org.javabip.engine.core</artifactId>
+      <version>0.1.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.javabip</groupId>
+      <artifactId>org.javabip.engine.bdd</artifactId>
+      <version>0.1.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.javabip</groupId>
+      <artifactId>org.javabip.engine.coordinator</artifactId>
+      <version>0.1.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.javabip</groupId>
+      <artifactId>org.javabip.engine.factory</artifactId>
+      <version>0.1.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.javabip</groupId>
+      <artifactId>org.javabip.glue</artifactId>
+      <version>0.1.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.javabip</groupId>
+      <artifactId>org.javabip.executor</artifactId>
+      <version>0.1.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>net.sf.javabdd</groupId>
+      <artifactId>javabdd</artifactId>
+      <version>1.0b2</version>
+    </dependency>
+
+    <!-- JavaBIP additional dependencies -->
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-actor_2.11</artifactId>
+      <version>2.5.32</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-beans</artifactId>
+      <version>3.2.14.RELEASE</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.camel</groupId>
+      <artifactId>camel-core</artifactId>
+      <version>2.15.3</version>
+    </dependency>
+
+    <!-- Jackson -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.15.2</version>
+    </dependency>
+
+    <!-- Logging -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+
+    <!-- Tests -->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.13.1</version>
+      <scope>test</scope>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <finalName>io.github.brice10.siphonix</finalName>
+    <plugins>
+
+      <!-- Compilation Java 11 -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.8.1</version>
+        <configuration>
+          <source>11</source>
+          <target>11</target>
+        </configuration>
+      </plugin>
+
+      <!-- Tests -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.22.2</version>
+        <configuration>
+          <reuseForks>false</reuseForks>
+          <forkCount>1</forkCount>
+        </configuration>
+      </plugin>
+
+      <!--
+        Fat JAR avec toutes les dépendances.
+        Deux main classes possibles :
+          - tools.spirals.cerberus237.siphonix.SiphoniX  → sidecar complet (AdaptiFlow + JavaBIP)
+          - adapteastore.Main                             → contrôleur JavaBIP seul (dev local)
+        Changer mainClass ci-dessous selon le besoin, ou passer -cp + nom de classe au lancement.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>3.6.0</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>tools.spirals.cerberus237.siphonix.SiphoniX</mainClass>
+            </manifest>
+          </archive>
+          <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
+        </configuration>
+        <executions>
+          <execution>
+            <id>make-assembly</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+  </build>
+
+</project>

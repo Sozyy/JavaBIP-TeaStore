@@ -1,0 +1,8 @@
+target/
+*.class
+*.iml
+.idea/
+.vscode/
+.gradle/
+libs/*.jar
+!libs/.gitkeep
