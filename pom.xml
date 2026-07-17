@@ -2,193 +2,262 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>io.github.brice10</groupId>
+	<artifactId>siphonix</artifactId>
+	<version>1.0.0</version>
+	<packaging>jar</packaging>
+	<name>SiphoniX</name>
+	<description>SiphoniX: a modular autonomic management framework for cloud microservices — includes JavaBIP/PID cache controller integration</description>
+	<url>https://github.com/brice10/siphonix</url>
 
-  <groupId>io.github.brice10</groupId>
-  <artifactId>siphonix</artifactId>
-  <version>1.0.0</version>
-  <packaging>jar</packaging>
-  <name>SiphoniX</name>
-  <description>SiphoniX: autonomic manager for AdaptableTeaStore — includes JavaBIP/PID cache controller</description>
+	<properties>
+		<maven.compiler.source>11</maven.compiler.source>
+		<maven.compiler.target>11</maven.compiler.target>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<slf4j.version>2.0.0</slf4j.version>
+	</properties>
 
-  <properties>
-    <maven.compiler.source>11</maven.compiler.source>
-    <maven.compiler.target>11</maven.compiler.target>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <slf4j.version>2.0.0</slf4j.version>
-  </properties>
+	<licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+			<distribution>repo</distribution>
+		</license>
+	</licenses>
 
-  <dependencies>
+	<scm>
+		<connection>scm:git:git://github.com/brice10/siphonix.git</connection>
+		<developerConnection>scm:git:ssh://github.com/brice10/siphonix.git</developerConnection>
+		<url>http://github.com/brice10/siphonix/tree/main</url>
+	</scm>
 
-    <!-- AdaptiFlow -->
-    <dependency>
-      <groupId>io.github.brice10</groupId>
-      <artifactId>adaptiflow</artifactId>
-      <version>1.0.2</version>
-    </dependency>
-    <dependency>
-      <groupId>io.github.brice10</groupId>
-      <artifactId>metricscollectorbase</artifactId>
-      <version>1.0.1</version>
-    </dependency>
-    <dependency>
-      <groupId>io.github.brice10</groupId>
-      <artifactId>adaptationactionsbase</artifactId>
-      <version>1.0.2</version>
-    </dependency>
+	<developers>
+		<developer>
+			<name>Cerberus237</name>
+			<email>arleonzemtsop@gmail.com</email>
+			<organization>University of Lille</organization>
+			<organizationUrl>https://www.univ-lille.fr/</organizationUrl>
+		</developer>
+	</developers>
 
-    <!-- JavaBIP (run install-javabip-jars.sh first) -->
-    <dependency>
-      <groupId>org.javabip</groupId>
-      <artifactId>org.javabip.api</artifactId>
-      <version>0.1.0-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.javabip</groupId>
-      <artifactId>org.javabip.engine.api</artifactId>
-      <version>0.1.0-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.javabip</groupId>
-      <artifactId>org.javabip.engine.core</artifactId>
-      <version>0.1.0-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.javabip</groupId>
-      <artifactId>org.javabip.engine.bdd</artifactId>
-      <version>0.1.0-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.javabip</groupId>
-      <artifactId>org.javabip.engine.coordinator</artifactId>
-      <version>0.1.0-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.javabip</groupId>
-      <artifactId>org.javabip.engine.factory</artifactId>
-      <version>0.1.0-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.javabip</groupId>
-      <artifactId>org.javabip.glue</artifactId>
-      <version>0.1.0-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>org.javabip</groupId>
-      <artifactId>org.javabip.executor</artifactId>
-      <version>0.1.0-SNAPSHOT</version>
-    </dependency>
-    <dependency>
-      <groupId>net.sf.javabdd</groupId>
-      <artifactId>javabdd</artifactId>
-      <version>1.0b2</version>
-    </dependency>
+	<dependencies>
+		<!-- Internal Dependencies (AdaptiFlow / Arléon) -->
+		<dependency>
+			<groupId>io.github.brice10</groupId>
+			<artifactId>adaptiflow</artifactId>
+			<version>1.0.2</version>
+		</dependency>
+		<dependency>
+			<groupId>io.github.brice10</groupId>
+			<artifactId>metricscollectorbase</artifactId>
+			<version>1.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>io.github.brice10</groupId>
+			<artifactId>adaptationactionsbase</artifactId>
+			<version>1.0.2</version>
+		</dependency>
 
-    <!-- JavaBIP additional dependencies -->
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-actor_2.11</artifactId>
-      <version>2.5.32</version>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-beans</artifactId>
-      <version>3.2.14.RELEASE</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.camel</groupId>
-      <artifactId>camel-core</artifactId>
-      <version>2.15.3</version>
-    </dependency>
+		<!-- JavaBIP (run install-javabip-jars.sh first to populate local .m2) -->
+		<dependency>
+			<groupId>org.javabip</groupId>
+			<artifactId>org.javabip.api</artifactId>
+			<version>0.1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.javabip</groupId>
+			<artifactId>org.javabip.engine.api</artifactId>
+			<version>0.1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.javabip</groupId>
+			<artifactId>org.javabip.engine.core</artifactId>
+			<version>0.1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.javabip</groupId>
+			<artifactId>org.javabip.engine.bdd</artifactId>
+			<version>0.1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.javabip</groupId>
+			<artifactId>org.javabip.engine.coordinator</artifactId>
+			<version>0.1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.javabip</groupId>
+			<artifactId>org.javabip.engine.factory</artifactId>
+			<version>0.1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.javabip</groupId>
+			<artifactId>org.javabip.glue</artifactId>
+			<version>0.1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>org.javabip</groupId>
+			<artifactId>org.javabip.executor</artifactId>
+			<version>0.1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>net.sf.javabdd</groupId>
+			<artifactId>javabdd</artifactId>
+			<version>1.0b2</version>
+		</dependency>
 
-    <!-- Jackson -->
-    <dependency>
-      <groupId>com.fasterxml.jackson.core</groupId>
-      <artifactId>jackson-databind</artifactId>
-      <version>2.15.2</version>
-    </dependency>
+		<!--
+			JAXB : retiré du JDK à partir de Java 11, mais requis en interne par le moteur
+			JavaBIP (EngineFactory/BIPGlue). Sans ça : NoClassDefFoundError javax/xml/bind/JAXBException
+			au démarrage du thread JavaBIP, sur toute JVM >= 11 (comme le conteneur image, JDK 11.0.17).
+		-->
+		<dependency>
+			<groupId>javax.xml.bind</groupId>
+			<artifactId>jaxb-api</artifactId>
+			<version>2.3.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.glassfish.jaxb</groupId>
+			<artifactId>jaxb-runtime</artifactId>
+			<version>2.3.1</version>
+		</dependency>
 
-    <!-- Logging -->
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>${slf4j.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
-      <version>${slf4j.version}</version>
-    </dependency>
+		<!--
+			ANTLR4 runtime : requis en interne par org.javabip.executor.SpecificationParser
+			(BehaviourBuilder) pour parser les spécifications BIP annotées. Absent de
+			install-javabip-jars.sh, qui n'installe que les jars JavaBIP sans leurs
+			dépendances transitives déclarées. Sans ça : NoClassDefFoundError
+			org/antlr/v4/runtime/CharStream au premier engine.register(...).
+		-->
+		<dependency>
+			<groupId>org.antlr</groupId>
+			<artifactId>antlr4-runtime</artifactId>
+			<version>4.5.3</version>
+		</dependency>
 
-    <!-- Tests -->
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.13.1</version>
-      <scope>test</scope>
-    </dependency>
+		<!-- JavaBIP additional dependencies -->
+		<dependency>
+			<groupId>com.typesafe.akka</groupId>
+			<artifactId>akka-actor_2.11</artifactId>
+			<version>2.5.32</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-beans</artifactId>
+			<version>3.2.14.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.camel</groupId>
+			<artifactId>camel-core</artifactId>
+			<version>2.15.3</version>
+		</dependency>
 
-  </dependencies>
+		<!-- Jackson (needed by DataProvider REST calls / RestMetricsCollector) -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.15.2</version>
+		</dependency>
 
-  <build>
-    <finalName>io.github.brice10.siphonix</finalName>
-    <plugins>
+		<!-- Logging Dependencies -->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>${slf4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-simple</artifactId>
+			<version>${slf4j.version}</version>
+		</dependency>
 
-      <!-- Compilation Java 11 -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <version>3.8.1</version>
-        <configuration>
-          <source>11</source>
-          <target>11</target>
-        </configuration>
-      </plugin>
+		<!-- Test Dependencies -->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.13.1</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
 
-      <!-- Tests -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <version>2.22.2</version>
-        <configuration>
-          <reuseForks>false</reuseForks>
-          <forkCount>1</forkCount>
-        </configuration>
-      </plugin>
+	<build>
+		<finalName>io.github.brice10.siphonix</finalName>
+		<plugins>
 
-      <!--
-        Fat JAR avec toutes les dépendances.
-        Deux main classes possibles :
-          - tools.spirals.cerberus237.siphonix.SiphoniX  → sidecar complet (AdaptiFlow + JavaBIP)
-          - adapteastore.Main                             → contrôleur JavaBIP seul (dev local)
-        Changer mainClass ci-dessous selon le besoin, ou passer -cp + nom de classe au lancement.
-      -->
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <version>3.6.0</version>
-        <configuration>
-          <archive>
-            <manifest>
-              <mainClass>tools.spirals.cerberus237.siphonix.SiphoniX</mainClass>
-            </manifest>
-          </archive>
-          <descriptorRefs>
-            <descriptorRef>jar-with-dependencies</descriptorRef>
-          </descriptorRefs>
-        </configuration>
-        <executions>
-          <execution>
-            <id>make-assembly</id>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
+			<!-- Explicit Java 11 compilation (redundant with properties above, kept for clarity) -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>3.8.1</version>
+				<configuration>
+					<source>11</source>
+					<target>11</target>
+				</configuration>
+			</plugin>
 
-    </plugins>
-  </build>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.22.2</version>
+				<configuration>
+					<reuseForks>false</reuseForks>
+					<forkCount>1</forkCount>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>3.4.0</version>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar-no-fork</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!--
+				Fat JAR avec toutes les dépendances (AdaptiFlow + JavaBIP).
+				mainClass = tools.spirals.cerberus237.siphonix.SiphoniX (sidecar complet).
+				Pour lancer uniquement ton contrôleur JavaBIP en dev local, override au lancement :
+				java -cp target/io.github.brice10.siphonix-jar-with-dependencies.jar adapteastore.Main
+			-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>3.6.0</version>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>tools.spirals.cerberus237.siphonix.SiphoniX</mainClass>
+						</manifest>
+					</archive>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+				</configuration>
+				<executions>
+					<execution>
+						<id>make-assembly</id>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<!--
+				Plugins de publication (javadoc/gpg/central-publishing) retirés du build par défaut :
+				ils appartiennent au pipeline de release d'Arléon sur Maven Central et le gpg-plugin
+				fera échouer `mvn package`/`mvn install` en local si aucune clé GPG n'est configurée.
+				Décommente et déplace dans un profil "release" si besoin plus tard.
+			-->
+
+		</plugins>
+	</build>
 
 </project>
