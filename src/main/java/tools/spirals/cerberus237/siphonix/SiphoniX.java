@@ -13,6 +13,11 @@ import tools.spirals.cerberus237.siphonix.strategies.javabip.CacheManagementStra
  * neither one depending on the other's code:
  *   - CacheSizeAdaptationObservation : AdaptiFlow-based observation scenario (Arléon)
  *   - CacheManagementStrategy        : JavaBIP-based PID cache controller (Julien)
+ *
+ * Note: this class only wires and starts the two strategies as threads — it does not itself
+ * poll or process anything. The JavaBIP PID loop, the real-metrics polling (cache-entries,
+ * cache-performance, cache-metrics) and all the controller logic live in CacheManagementStrategy;
+ * that is the file to look at to see the actual behaviour.
  */
 public class SiphoniX {
 
@@ -48,5 +53,29 @@ public class SiphoniX {
         javabipThread.setDaemon(true);
         javabipThread.start();
         logger.info("[SiphoniX] JavaBIP Cache Management Strategy Start (target: {})", IMAGE_BASE_URL);
+        logger.info("[SiphoniX] PID process variable now driven by real metrics: {}/rest/metrics/cache-performance " +
+                "(meanHitTime/meanMissTime), occupation logged from {}/rest/metrics/cache-metrics",
+                IMAGE_BASE_URL, IMAGE_BASE_URL);
+
+        // javabipThread is a daemon thread: without joining it here, main() returns immediately
+        // and the JVM shuts down right away since no non-daemon thread is left to keep it alive.
+        try {
+            javabipThread.join();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 }
+
+
+
+/*
+
+dans siphonix ->
+
+mvn clean install
+cd samples/adaptable-teastore-image
+sh run.debug.sh
+docker ps -> récupérer l'id du conteneur image
+docker logs -f l'id 
+ */

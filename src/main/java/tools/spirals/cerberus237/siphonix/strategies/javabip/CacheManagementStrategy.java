@@ -1,19 +1,24 @@
 package tools.spirals.cerberus237.siphonix.strategies.javabip;
 
 import akka.actor.ActorSystem;
-import controller.Bridge;
-import controller.CacheUpdater;
-import controller.DataProvider;
-import controller.Glue;
-import controller.PIDController;
-import controller.ServiceCollector;
-import controller.cache.SwitchableCache;
+
+import tools.spirals.cerberus237.siphonix.strategies.javabip.controller.Bridge;
+import tools.spirals.cerberus237.siphonix.strategies.javabip.controller.CacheEntriesCollector;
+import tools.spirals.cerberus237.siphonix.strategies.javabip.controller.CacheHitMissCollector;
+import tools.spirals.cerberus237.siphonix.strategies.javabip.controller.CacheMetricsCollector;
+import tools.spirals.cerberus237.siphonix.strategies.javabip.controller.CacheUpdater;
+import tools.spirals.cerberus237.siphonix.strategies.javabip.controller.DataProvider;
+import tools.spirals.cerberus237.siphonix.strategies.javabip.controller.Glue;
+import tools.spirals.cerberus237.siphonix.strategies.javabip.controller.PIDController;
+import tools.spirals.cerberus237.siphonix.strategies.javabip.controller.cache.SwitchableCache;
 
 import org.javabip.api.BIPEngine;
 import org.javabip.api.BIPGlue;
 import org.javabip.engine.factory.EngineFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.spirals.cerberus237.metricscollectorbase.models.CacheHitMissMetrics;
+import tools.spirals.cerberus237.metricscollectorbase.models.CacheMetrics;
 
 /**
  * CacheManagementStrategy is the SiphoniX strategy wrapping the adapteastore JavaBIP controller.
@@ -30,6 +35,14 @@ import org.slf4j.LoggerFactory;
  * The TARGET_URL env variable controls which image service to target.
  * Defaults to http://localhost:8083/tools.descartes.teastore.image for local dev.
  *
+ * Real metrics: the hit/miss timing weights (HIT_WEIGHT/MISS_WEIGHT below) are only fallback
+ * defaults, overridden at runtime from the image service's real GET /rest/metrics/cache-performance
+ * (see CacheHitMissCollector). The shadow cache/PID still reason in item counts internally (see
+ * NOTE on units in controller.Main); the real, byte-based measurements (GET /rest/metrics/cache-entries
+ * byteSize per image, and GET /rest/metrics/cache-metrics maxCacheSize) are only used at the very end
+ * of each cycle, to convert the PID's item-count decision into a byte target meaningful to TeaStore's
+ * real cache before it is POSTed via CacheUpdater — see the sizeForTeaStore computation below.
+ *
  * Alternatively, you can run adapteastore.Main directly as a standalone process.
  */
 public class CacheManagementStrategy implements Runnable {
@@ -38,17 +51,24 @@ public class CacheManagementStrategy implements Runnable {
     private final String imageBaseUrl;
 
     private static final String DEFAULT_CACHE_STRATEGY = "LRU";
-    private static final int   CACHE_CAPACITY      = 80;
-    private static final int   MIN_CACHE_CAPACITY  = 2;
-    private static final int   MAX_CACHE_CAPACITY  = 500;
-    private static final int   IMAGE_UNIVERSE_SIZE = 100;
-    private static final float TARGET_TIME         = 10.0F;
-    private static final float KP = 0.9F;
-    private static final float KI = 0.05F;
-    private static final float KD = 0.15F;
-    private static final float HIT_WEIGHT  = 0.2F;
-    private static final float MISS_WEIGHT = 2.0F;
-    private static final long  SCALE_FACTOR      = 1L;
+    private static final int    CACHE_CAPACITY      = 80;
+    private static final int    MIN_CACHE_CAPACITY  = 2;
+    private static final int    MAX_CACHE_CAPACITY  = 500;
+    // TARGET_TIME=10.0F (inherited from CollectiveTeaStore) was ~100x smaller than the real
+    // meanHitTime/meanMissTime measured on AdaptableTeaStore (fractions of a ms), so the error
+    // was always deeply negative and, combined with unbounded integral growth, collapsed the
+    // cache to MIN_CACHE_CAPACITY within a handful of cycles regardless of actual traffic.
+    // Retuned to a user-defined acceptable per-request time (2s = 2000ms, same unit as the real
+    // hit/miss measurements). KP/KI/KD are scaled down by the same 200x factor (2000/10) so the
+    // control loop reacts to a given *relative* error the same way it did at the old scale,
+    // instead of saturating the output on the first cycle.
+    private static final float TARGET_TIME         = 2000.0F;
+    private static final float KP = 0.9F   / 200F;
+    private static final float KI = 0.05F  / 200F;
+    private static final float KD = 0.15F  / 200F;
+    private static final float HIT_WEIGHT  = 0.2F; // fallback only, overridden by real cache-performance metrics
+    private static final float MISS_WEIGHT = 2.0F; // fallback only, overridden by real cache-performance metrics
+    private static final long  SCALE_FACTOR      = 1L; // fallback only, used until the first byteSize sample (see sizeForTeaStore below)
     private static final long  POLL_INTERVAL_MS  = 2_000L;
     private static final long  CYCLE_TIMEOUT_MS  = 10_000L;
 
@@ -74,12 +94,14 @@ public class CacheManagementStrategy implements Runnable {
             engine        = engineFactory.create("glue", glue);
 
             SwitchableCache cache        = new SwitchableCache(DEFAULT_CACHE_STRATEGY, CACHE_CAPACITY);
-            DataProvider    dataProvider = new DataProvider(cache, IMAGE_UNIVERSE_SIZE, HIT_WEIGHT, MISS_WEIGHT);
+            DataProvider    dataProvider = new DataProvider(cache, HIT_WEIGHT, MISS_WEIGHT);
             PIDController   pid          = new PIDController(CACHE_CAPACITY, MIN_CACHE_CAPACITY, MAX_CACHE_CAPACITY, TARGET_TIME, KP, KI, KD);
             Bridge          bridge       = new Bridge(cache);
 
-            CacheUpdater     imageUpdater   = new CacheUpdater(imageBaseUrl);
-            ServiceCollector imageCollector = new ServiceCollector("image", imageBaseUrl, "/rest/metrics/requests");
+            CacheUpdater           imageUpdater          = new CacheUpdater(imageBaseUrl);
+            CacheEntriesCollector  imageCollector        = new CacheEntriesCollector("image", imageBaseUrl);
+            CacheHitMissCollector  hitMissCollector      = new CacheHitMissCollector("image", imageBaseUrl);
+            CacheMetricsCollector  cacheMetricsCollector = new CacheMetricsCollector("image", imageBaseUrl);
 
             engine.register(dataProvider, "dataProvider",  true);
             engine.register(pid,          "pidController", true);
@@ -91,20 +113,44 @@ public class CacheManagementStrategy implements Runnable {
 
             int iter = 0;
             while (!Thread.currentThread().isInterrupted()) {
-                int delta = imageCollector.get();
-                if (delta > 0) {
-                    bridge.update(delta, "TeaStore poll");
+                CacheHitMissMetrics hitMiss = hitMissCollector.get();
+                Double meanHit  = null;
+                Double meanMiss = null;
+                if (hitMiss != null) {
+                    meanHit  = hitMiss.getMeanHitTime();
+                    meanMiss = hitMiss.getMeanMissTime();
+                    dataProvider.updateTimings(meanHit, meanMiss);
+                }
+                CacheMetrics realOccupation = cacheMetricsCollector.get();
+
+                int[] loadedImageIds = imageCollector.get();
+                if (loadedImageIds.length > 0) {
+                    bridge.update(loadedImageIds, "TeaStore poll");
                     int newCacheSize = bridge.waitForCycleAndGetCacheSize(CYCLE_TIMEOUT_MS);
                     if (newCacheSize >= 0) {
-                        long sizeForTeaStore = (long) newCacheSize * SCALE_FACTOR;
+                        // Convert the PID's item-count decision into a byte target using the real,
+                        // measured average image size (cache-entries.byteSize), rather than treating
+                        // item count as if it were already bytes. Do NOT clamp against realOccupation's
+                        // maxCacheSize: setCacheSize() below overwrites TeaStore's real maxCacheSize with
+                        // whatever we send, so that value is our own previous output, not a fixed ceiling.
+                        // Clamping against it created a one-way ratchet (max can only shrink cycle over
+                        // cycle, never grow back) that collapsed the cache to MIN_CACHE_CAPACITY and stuck.
+                        double avgBytesPerImage = imageCollector.getLastAverageByteSize();
+                        long sizeForTeaStore;
+                        if (avgBytesPerImage > 0) {
+                            sizeForTeaStore = Math.round(newCacheSize * avgBytesPerImage);
+                        } else {
+                            sizeForTeaStore = (long) newCacheSize * SCALE_FACTOR;
+                        }
                         CacheUpdater.UpdateResult result = imageUpdater.update(sizeForTeaStore);
-                        LOG.info("[CacheManagement] iter={} delta={} -> PID_cache={} strategy={} -> image={}",
-                                iter, delta, newCacheSize, cache.getActiveStrategy(), result);
+                        LOG.info("[CacheManagement] iter={} images={} hit={} miss={} -> PID_cache={} items avg_bytes/img={} -> bytes_target={} strategy={} real_bytes={} -> image={}",
+                                iter, loadedImageIds.length, meanHit, meanMiss,
+                                newCacheSize, avgBytesPerImage, sizeForTeaStore, cache.getActiveStrategy(), realOccupation, result);
                     } else {
-                        LOG.warn("[CacheManagement] iter={} delta={} -> BIP cycle timeout", iter, delta);
+                        LOG.warn("[CacheManagement] iter={} images={} -> BIP cycle timeout", iter, loadedImageIds.length);
                     }
                 } else {
-                    LOG.debug("[CacheManagement] iter={} delta=0 (no traffic or unreachable)", iter);
+                    LOG.debug("[CacheManagement] iter={} images=0 (no traffic or unreachable) real_bytes={}", iter, realOccupation);
                 }
                 iter++;
                 Thread.sleep(POLL_INTERVAL_MS);
