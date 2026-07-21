@@ -13,7 +13,7 @@ import java.time.Duration;
  * AdaptableTeaStore side (ImageProviderEndpoint.setCacheSize(long)) :
  *   - Returns 200 OK with a boolean body
  *     - true if the new size has been applied
- *     - false otherwise, null or negativ cache
+ *     - false otherwise, null or negative cache
  */
 public class CacheUpdater {
 

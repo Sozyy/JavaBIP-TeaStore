@@ -5,12 +5,12 @@ import org.javabip.api.DataOut;
 import org.javabip.api.PortType;
 
 /**
- * PID Controller that receives the DataProvider processingTime and returns a new cache size
- * comparing the processingTime and targetTime.
+ * PID Controller that receives the DataProvider responseTime and returns a new cache size
+ * comparing the responseTime and targetResponseTime.
  *
- * IMPORTANT NOTE !
- *   - This version of the controller has the parameters for the CollectiveTeaStore, it must be adapted for the AdaptableTeaStore.
- *   - It works with a number of items but is supposed to return a number of bytes for the ATS.
+ * Reasons in item counts, not bytes: the shadow cache tracks how many images it holds, not
+ * their size. CacheManagementStrategy converts the returned item count into a byte target
+ * for AdaptableTeaStore's real cache using the average measured image byte size.
  */
 @Ports({
         @Port(name = "receiveResponseTime", type = PortType.enforceable),

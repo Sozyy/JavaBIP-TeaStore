@@ -3,9 +3,7 @@ package tools.spirals.cerberus237.siphonix.strategies.javabip.component;
 import org.javabip.annotations.*;
 import org.javabip.api.DataOut;
 import org.javabip.api.PortType;
-import org.slf4j.LoggerFactory;
 
-import tools.spirals.cerberus237.siphonix.strategies.javabip.CacheManagementStrategy;
 import tools.spirals.cerberus237.siphonix.strategies.javabip.cache.ICache;
 
 /**
@@ -88,10 +86,6 @@ public class DataProvider {
 
     @Data(name = "responseTime", accessTypePort = DataOut.AccessType.any)
     public float getResponseTime() { return responseTime; }
-
-    @Data(name = "response", accessTypePort = DataOut.AccessType.any)
-    public int response() { return loadedImages; }
-
 
     // === HELPERS ===
 

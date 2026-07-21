@@ -12,9 +12,8 @@ import tools.spirals.cerberus237.metricscollectorbase.models.CacheMetrics;
  * all expressed in bytes) by inspecting Arléon's CacheSizeAdaptationObservation, which
  * wires the same endpoint/model pair for AdaptiFlow but does not expose it to JavaBIP.
  *
- * Used at startup to size the PIDController's min/max cache bounds from the real
- * cache capacity instead of hardcoded guesses, and can also be polled at runtime
- * to log/monitor real occupation alongside the PID's own (item-based) estimate.
+ * Polled at runtime by CacheManagementStrategy to log/monitor the real occupation
+ * alongside the PID's own (item-based) estimate.
  */
 public class CacheMetricsCollector implements IMetricsCollector<CacheMetrics> {
 
