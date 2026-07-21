@@ -35,15 +35,24 @@ public class SiphoniX {
             ? TARGET_SERVICE_URL.substring(0, TARGET_SERVICE_URL.length() - "/rest".length())
             : TARGET_SERVICE_URL;
 
+    // Permet de désactiver la stratégie AdaptiFlow pour tester uniquement le contrôleur JavaBIP.
+    // ENABLE_ADAPTIFLOW=false (ou l'omettre) -> seul CacheManagementStrategy (JavaBIP) tourne.
+    private static final boolean ENABLE_ADAPTIFLOW = Boolean.parseBoolean(
+            System.getenv().getOrDefault("ENABLE_ADAPTIFLOW", "false"));
+
     public static void main(String[] args) {
         logger.info("[SiphoniX] Starting Autonomic Manager Sidecar...");
         logger.info("[SiphoniX] Monitoring Target: {}", TARGET_SERVICE_URL);
 
         // --- Stratégie AdaptiFlow (Arléon) ---
-        if (CacheSizeAdaptationObservation.cacheSizeAdaptationObservationScheduler == null)
-            CacheSizeAdaptationObservation.getInstance();
-        CacheSizeAdaptationObservation.cacheSizeAdaptationObservationScheduler.start();
-        logger.info("[SiphoniX] Cache Size Adaptation Observation Start");
+        if (ENABLE_ADAPTIFLOW) {
+            if (CacheSizeAdaptationObservation.cacheSizeAdaptationObservationScheduler == null)
+                CacheSizeAdaptationObservation.getInstance();
+            CacheSizeAdaptationObservation.cacheSizeAdaptationObservationScheduler.start();
+            logger.info("[SiphoniX] Cache Size Adaptation Observation Start");
+        } else {
+            logger.info("[SiphoniX] AdaptiFlow strategy disabled (set ENABLE_ADAPTIFLOW=true to re-enable)");
+        }
 
         // --- Stratégie JavaBIP (contrôleur PID) ---
         Thread javabipThread = new Thread(

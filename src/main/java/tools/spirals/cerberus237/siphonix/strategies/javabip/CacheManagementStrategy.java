@@ -66,9 +66,8 @@ public class CacheManagementStrategy implements Runnable {
     private static final float KP = 0.9F   / 200F;
     private static final float KI = 0.05F  / 200F;
     private static final float KD = 0.15F  / 200F;
-    private static final float HIT_WEIGHT  = 0.2F; // fallback only, overridden by real cache-performance metrics
-    private static final float MISS_WEIGHT = 2.0F; // fallback only, overridden by real cache-performance metrics
-    private static final long  SCALE_FACTOR      = 1L; // fallback only, used until the first byteSize sample (see sizeForTeaStore below)
+    private static final float HIT_WEIGHT  = 0.2F; 
+    private static final float MISS_WEIGHT = 2.0F; 
     private static final long  POLL_INTERVAL_MS  = 2_000L;
     private static final long  CYCLE_TIMEOUT_MS  = 10_000L;
 
@@ -136,12 +135,8 @@ public class CacheManagementStrategy implements Runnable {
                         // Clamping against it created a one-way ratchet (max can only shrink cycle over
                         // cycle, never grow back) that collapsed the cache to MIN_CACHE_CAPACITY and stuck.
                         double avgBytesPerImage = imageCollector.getLastAverageByteSize();
-                        long sizeForTeaStore;
-                        if (avgBytesPerImage > 0) {
-                            sizeForTeaStore = Math.round(newCacheSize * avgBytesPerImage);
-                        } else {
-                            sizeForTeaStore = (long) newCacheSize * SCALE_FACTOR;
-                        }
+                        long sizeForTeaStore = Math.round(newCacheSize * avgBytesPerImage) + 1; // +1 not to get to 0 bytes
+                        
                         CacheUpdater.UpdateResult result = imageUpdater.update(sizeForTeaStore);
                         LOG.info("[CacheManagement] iter={} images={} hit={} miss={} -> PID_cache={} items avg_bytes/img={} -> bytes_target={} strategy={} real_bytes={} -> image={}",
                                 iter, loadedImageIds.length, meanHit, meanMiss,

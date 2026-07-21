@@ -21,9 +21,6 @@ public class CacheUpdater {
     private final URI setCacheSizeEndpoint;
     private final Duration requestTimeout;
 
-    /**
-     * @param imageBaseUrl ex: "http://localhost:8083/tools.descartes.teastore.image"
-     */
     public CacheUpdater(String imageBaseUrl) {
         this(imageBaseUrl, Duration.ofSeconds(5));
     }
