@@ -2,15 +2,15 @@ package tools.spirals.cerberus237.siphonix.strategies.javabip;
 
 import akka.actor.ActorSystem;
 
-import tools.spirals.cerberus237.siphonix.strategies.javabip.controller.Bridge;
-import tools.spirals.cerberus237.siphonix.strategies.javabip.controller.CacheEntriesCollector;
-import tools.spirals.cerberus237.siphonix.strategies.javabip.controller.CacheHitMissCollector;
-import tools.spirals.cerberus237.siphonix.strategies.javabip.controller.CacheMetricsCollector;
-import tools.spirals.cerberus237.siphonix.strategies.javabip.controller.CacheUpdater;
-import tools.spirals.cerberus237.siphonix.strategies.javabip.controller.DataProvider;
-import tools.spirals.cerberus237.siphonix.strategies.javabip.controller.Glue;
-import tools.spirals.cerberus237.siphonix.strategies.javabip.controller.PIDController;
-import tools.spirals.cerberus237.siphonix.strategies.javabip.controller.cache.SwitchableCache;
+import tools.spirals.cerberus237.siphonix.strategies.javabip.component.Bridge;
+import tools.spirals.cerberus237.siphonix.strategies.javabip.component.DataProvider;
+import tools.spirals.cerberus237.siphonix.strategies.javabip.component.Glue;
+import tools.spirals.cerberus237.siphonix.strategies.javabip.component.PIDController;
+import tools.spirals.cerberus237.siphonix.strategies.javabip.http.CacheEntriesCollector;
+import tools.spirals.cerberus237.siphonix.strategies.javabip.http.CacheHitMissCollector;
+import tools.spirals.cerberus237.siphonix.strategies.javabip.http.CacheMetricsCollector;
+import tools.spirals.cerberus237.siphonix.strategies.javabip.http.CacheUpdater;
+import tools.spirals.cerberus237.siphonix.strategies.javabip.cache.SwitchableCache;
 
 import org.javabip.api.BIPEngine;
 import org.javabip.api.BIPGlue;
@@ -37,13 +37,11 @@ import tools.spirals.cerberus237.metricscollectorbase.models.CacheMetrics;
  *
  * Real metrics: the hit/miss timing weights (HIT_WEIGHT/MISS_WEIGHT below) are only fallback
  * defaults, overridden at runtime from the image service's real GET /rest/metrics/cache-performance
- * (see CacheHitMissCollector). The shadow cache/PID still reason in item counts internally (see
- * NOTE on units in controller.Main); the real, byte-based measurements (GET /rest/metrics/cache-entries
- * byteSize per image, and GET /rest/metrics/cache-metrics maxCacheSize) are only used at the very end
- * of each cycle, to convert the PID's item-count decision into a byte target meaningful to TeaStore's
- * real cache before it is POSTed via CacheUpdater — see the sizeForTeaStore computation below.
- *
- * Alternatively, you can run adapteastore.Main directly as a standalone process.
+ * (see CacheHitMissCollector). The shadow cache/PID still reason in item counts internally; the
+ * real, byte-based measurements (GET /rest/metrics/cache-entries byteSize per image, and
+ * GET /rest/metrics/cache-metrics maxCacheSize) are only used at the very end of each cycle, to
+ * convert the PID's item-count decision into a byte target meaningful to TeaStore's real cache
+ * before it is POSTed via CacheUpdater — see the sizeForTeaStore computation below.
  */
 public class CacheManagementStrategy implements Runnable {
 

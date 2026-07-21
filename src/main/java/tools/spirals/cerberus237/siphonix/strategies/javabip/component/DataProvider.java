@@ -1,4 +1,4 @@
-package tools.spirals.cerberus237.siphonix.strategies.javabip.controller;
+package tools.spirals.cerberus237.siphonix.strategies.javabip.component;
 
 import org.javabip.annotations.*;
 import org.javabip.api.DataOut;
@@ -6,7 +6,7 @@ import org.javabip.api.PortType;
 import org.slf4j.LoggerFactory;
 
 import tools.spirals.cerberus237.siphonix.strategies.javabip.CacheManagementStrategy;
-import tools.spirals.cerberus237.siphonix.strategies.javabip.controller.cache.ICache;
+import tools.spirals.cerberus237.siphonix.strategies.javabip.cache.ICache;
 
 /**
  * DataProvider gets the real IDs of the images loaded by AdaptableTeaStore since the last poll,
@@ -45,7 +45,7 @@ public class DataProvider {
 
     /**
      * Updates the hit/miss timing weights from a freshly polled CacheHitMissMetrics.
-     * Called by Main before each cycle, right after CacheHitMissCollector.get().
+     * Called by CacheManagementStrategy before each cycle, right after CacheHitMissCollector.get().
      * Values that are NaN, negative, or otherwise not usable are ignored so a
      * transient collector error doesn't zero out the PID's process variable.
      */

@@ -1,4 +1,4 @@
-package tools.spirals.cerberus237.siphonix.strategies.javabip.controller;
+package tools.spirals.cerberus237.siphonix.strategies.javabip.http;
 
 import java.net.URI;
 import java.net.http.HttpClient;

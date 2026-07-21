@@ -1,4 +1,4 @@
-package tools.spirals.cerberus237.siphonix.strategies.javabip.controller;
+package tools.spirals.cerberus237.siphonix.strategies.javabip.component;
 
 import org.javabip.glue.TwoSynchronGlueBuilder;
 

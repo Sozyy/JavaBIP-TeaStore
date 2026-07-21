@@ -1,10 +1,10 @@
-package tools.spirals.cerberus237.siphonix.strategies.javabip.controller;
+package tools.spirals.cerberus237.siphonix.strategies.javabip.component;
 
 import org.javabip.annotations.*;
 import org.javabip.api.DataOut;
 import org.javabip.api.PortType;
 
-import tools.spirals.cerberus237.siphonix.strategies.javabip.controller.cache.ICache;
+import tools.spirals.cerberus237.siphonix.strategies.javabip.cache.ICache;
 import tools.spirals.cerberus237.adaptiflow.interfaces.ConditionEvaluator;
 import tools.spirals.cerberus237.adaptiflow.interfaces.Observer;
 import tools.spirals.cerberus237.adaptiflow.operators.TrueEvaluator;

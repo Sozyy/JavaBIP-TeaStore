@@ -1,4 +1,4 @@
-package tools.spirals.cerberus237.siphonix.strategies.javabip.controller;
+package tools.spirals.cerberus237.siphonix.strategies.javabip.http;
 
 import tools.spirals.cerberus237.metricscollectorbase.IMetricsCollector;
 import tools.spirals.cerberus237.metricscollectorbase.core.RestMetricsCollector;

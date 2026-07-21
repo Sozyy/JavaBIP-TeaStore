@@ -1,4 +1,4 @@
-package tools.spirals.cerberus237.siphonix.strategies.javabip.controller.cache;
+package tools.spirals.cerberus237.siphonix.strategies.javabip.cache;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
