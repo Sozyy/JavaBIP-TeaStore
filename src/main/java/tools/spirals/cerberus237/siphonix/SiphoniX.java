@@ -44,7 +44,7 @@ public class SiphoniX {
         logger.info("[SiphoniX] Starting Autonomic Manager Sidecar...");
         logger.info("[SiphoniX] Monitoring Target: {}", TARGET_SERVICE_URL);
 
-        // --- Stratégie AdaptiFlow (Arléon) ---
+        // --- AdaptiFlow ---
         if (ENABLE_ADAPTIFLOW) {
             if (CacheSizeAdaptationObservation.cacheSizeAdaptationObservationScheduler == null)
                 CacheSizeAdaptationObservation.getInstance();
@@ -54,11 +54,8 @@ public class SiphoniX {
             logger.info("[SiphoniX] AdaptiFlow strategy disabled (set ENABLE_ADAPTIFLOW=true to re-enable)");
         }
 
-        // --- Stratégie JavaBIP (contrôleur PID) ---
-        Thread javabipThread = new Thread(
-                new CacheManagementStrategy(IMAGE_BASE_URL),
-                "javabip-cache-management"
-        );
+        // --- JavaBIP PID controller ---
+        Thread javabipThread = new Thread(new CacheManagementStrategy(IMAGE_BASE_URL), "javabip-cache-management");
         javabipThread.setDaemon(true);
         javabipThread.start();
         logger.info("[SiphoniX] JavaBIP Cache Management Strategy Start (target: {})", IMAGE_BASE_URL);
@@ -76,15 +73,3 @@ public class SiphoniX {
     }
 }
 
-
-
-/*
-
-dans siphonix ->
-
-mvn clean install
-cd samples/adaptable-teastore-image
-sh run.debug.sh
-docker ps -> récupérer l'id du conteneur image
-docker logs -f l'id 
- */
