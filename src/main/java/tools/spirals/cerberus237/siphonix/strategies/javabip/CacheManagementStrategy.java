@@ -61,17 +61,14 @@ public class CacheManagementStrategy implements Runnable {
     // control loop reacts to a given *relative* error the same way it did at the old scale,
     // instead of saturating the output on the first cycle.
     private static final float TARGET_TIME         = 2000.0F;
-    private static final float KP = 0.9F   / 200F;
-    private static final float KI = 0.05F  / 200F;
-    private static final float KD = 0.15F  / 200F;
+    private static final float KP = 0.9F;
+    private static final float KI = 0.05F;
+    private static final float KD = 0.15F;
     private static final float HIT_WEIGHT  = 0.2F; 
     private static final float MISS_WEIGHT = 2.0F; 
     private static final long  POLL_INTERVAL_MS  = 2_000L;
     private static final long  CYCLE_TIMEOUT_MS  = 10_000L;
 
-    /**
-     * @param imageBaseUrl e.g. "http://localhost:8083/tools.descartes.teastore.image"
-     */
     public CacheManagementStrategy(String imageBaseUrl) {
         this.imageBaseUrl = imageBaseUrl;
     }

@@ -1,82 +1,184 @@
-version: '3'
+# version: '3'
+
+# services:
+
+#   registry:
+#     image: cerberus237/adaptable-teastore-registry
+#     restart: unless-stopped
+#     expose:
+#       - ${REGISTRY_DEBUG_PORT:-8000}
+#     ports:
+#       - ${REGISTRY_DEBUG_PORT:-8000}:${REGISTRY_DEBUG_PORT:-8000}
+#     environment:
+#       HOST_NAME: "registry"
+#       CATALINA_OPTS: ${CATALINA_OPTS:--agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:}${REGISTRY_DEBUG_PORT:-8000}
+
+#   # The Autonomic Manager (Sidecar)
+#   image:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile.manager
+#       args:
+#         SIPHONIX: ${SIPHONIX:-./siphonix-app.jar}
+#     environment:
+#       PORT: 8080
+#       HOST_NAME: "image"
+#       REGISTRY_HOST: "registry"
+#       CATALINA_OPTS: ${CATALINA_OPTS:--agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:}${IMAGE_DEBUG_PORT:-8003}
+#       TARGET_URL: "http://image:8080/tools.descartes.teastore.image/rest"
+#     ports:
+#       - "8003:8003"
+#     expose:
+#       - "8080"
+#       - "8003"
+#     restart: unless-stopped
+#     volumes:
+#       - "/var/run/docker.sock:/var/run/docker.sock"
+
+
+#   db:
+#     image: cerberus237/adaptable-teastore-db
+#     restart: unless-stopped
+#     expose:
+#       - "3306"
+#     ports:
+#       - "3306:3306"
+
+#   persistence:
+#     image: cerberus237/adaptable-teastore-persistence
+#     restart: unless-stopped
+#     expose:
+#       - ${PERSISTENCE_DEBUG_PORT:-8004}
+#     environment:
+#       HOST_NAME: "persistence"
+#       REGISTRY_HOST: "registry"
+#       DB_HOST: "db"
+#       DB_PORT: "3306"
+#       CATALINA_OPTS: ${CATALINA_OPTS:--agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:}${PERSISTENCE_DEBUG_PORT:-8004}
+#     ports:
+#       - ${PERSISTENCE_DEBUG_PORT:-8004}:${PERSISTENCE_DEBUG_PORT:-8004}
+#     volumes:
+#       - "/var/run/docker.sock:/var/run/docker.sock"
+
+#   webui:
+#     image: cerberus237/adaptable-teastore-webui
+#     restart: unless-stopped
+#     expose:
+#       - "8080"
+#       - ${WEBUI_DEBUG_PORT:-8002}
+#     environment:
+#       HOST_NAME: "webui"
+#       REGISTRY_HOST: "registry"
+#       CATALINA_OPTS: ${CATALINA_OPTS:--agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:}${WEBUI_DEBUG_PORT:-8002}
+#     ports:
+#       - "8080:8080"
+#       - ${WEBUI_DEBUG_PORT:-8002}:${WEBUI_DEBUG_PORT:-8002}
+#     volumes:
+#       - "/var/run/docker.sock:/var/run/docker.sock"
+
+# networks:
+#   image-network:
+#     name: image-network
+#     driver: bridge
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+version: "3.8"
 
 services:
-
   registry:
     image: cerberus237/adaptable-teastore-registry
     restart: unless-stopped
-    expose:
-      - ${REGISTRY_DEBUG_PORT:-8000}
-    ports:
-      - ${REGISTRY_DEBUG_PORT:-8000}:${REGISTRY_DEBUG_PORT:-8000}
     environment:
       HOST_NAME: "registry"
-      CATALINA_OPTS: ${CATALINA_OPTS:--agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:}${REGISTRY_DEBUG_PORT:-8000}
 
-  # The Autonomic Manager (Sidecar)
   image:
     build:
       context: .
       dockerfile: Dockerfile.manager
       args:
         SIPHONIX: ${SIPHONIX:-./siphonix-app.jar}
+    restart: unless-stopped
     environment:
       PORT: 8080
       HOST_NAME: "image"
       REGISTRY_HOST: "registry"
-      CATALINA_OPTS: ${CATALINA_OPTS:--agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:}${IMAGE_DEBUG_PORT:-8003}
       TARGET_URL: "http://image:8080/tools.descartes.teastore.image/rest"
-    ports:
-      - "8003:8003"
-    expose:
-      - "8080"
-      - "8003"
-    restart: unless-stopped
+      SIPHONIX_CONFIG: "/opt/siphonix/scenarios/${SCENARIO_FILE:-benin-traffic}.yml"
+      SIPHONIX_PLUGIN_DIR: "/opt/siphonix/plugins"
+      SIPHONIX_PLUGIN_DISCOVERY_MODE: "${SIPHONIX_PLUGIN_DISCOVERY_MODE:-watch-auto}"
     volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock"
-
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./scenarios:/opt/siphonix/scenarios:ro
+      - ./plugins:/opt/siphonix/plugins
 
   db:
     image: cerberus237/adaptable-teastore-db
     restart: unless-stopped
-    expose:
-      - "3306"
     ports:
       - "3306:3306"
 
   persistence:
     image: cerberus237/adaptable-teastore-persistence
     restart: unless-stopped
-    expose:
-      - ${PERSISTENCE_DEBUG_PORT:-8004}
     environment:
       HOST_NAME: "persistence"
       REGISTRY_HOST: "registry"
       DB_HOST: "db"
       DB_PORT: "3306"
-      CATALINA_OPTS: ${CATALINA_OPTS:--agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:}${PERSISTENCE_DEBUG_PORT:-8004}
-    ports:
-      - ${PERSISTENCE_DEBUG_PORT:-8004}:${PERSISTENCE_DEBUG_PORT:-8004}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  auth:
+    image: cerberus237/adaptable-teastore-auth
+    restart: unless-stopped
+    environment:
+      HOST_NAME: "auth"
+      REGISTRY_HOST: "registry"
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
 
   webui:
     image: cerberus237/adaptable-teastore-webui
     restart: unless-stopped
-    expose:
-      - "8080"
-      - ${WEBUI_DEBUG_PORT:-8002}
     environment:
       HOST_NAME: "webui"
       REGISTRY_HOST: "registry"
-      CATALINA_OPTS: ${CATALINA_OPTS:--agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:}${WEBUI_DEBUG_PORT:-8002}
     ports:
       - "8080:8080"
-      - ${WEBUI_DEBUG_PORT:-8002}:${WEBUI_DEBUG_PORT:-8002}
     volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock"
+      - /var/run/docker.sock:/var/run/docker.sock
 
-networks:
-  image-network:
-    name: image-network
-    driver: bridge
+  director:
+    image: cerberus237/loadgenerator-director
+    depends_on: 
+      - loadgenerator
+    restart: unless-stopped
+    environment:
+      - LOAD_PROFILE=$LOAD_PROFILE
+      - LUA_SCRIPT=$LUA_SCRIPT
+      - OUTPUT_LOG=$OUTPUT_LOG
+      - LOAD_GENERATOR_IP=$LOAD_GENERATOR_IP
+      - APPLICATION_URL=$APPLICATION_URL
+
+  loadgenerator:
+    image: cerberus237/loadgenerator-generator
+    restart: unless-stopped
+
+
+    # depend_on entre webui et loadgenerator sinon redémarrer
