@@ -3,7 +3,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-mvn clean install
+mvn clean install -DskipTests
 
 cd "$SCRIPT_DIR/samples/adaptable-teastore-image"
 sh run.debug.sh

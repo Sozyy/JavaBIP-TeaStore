@@ -6,3 +6,4 @@ target/
 .gradle/
 libs/*.jar
 !libs/.gitkeep
+/output/

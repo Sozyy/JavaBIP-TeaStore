@@ -63,7 +63,6 @@ public class Bridge {
                 System.out.printf("[Bridge] update(%d images) DROPPED: previous data not consumed yet%n", imageIds.length);
                 return;
             }
-            System.out.printf("[Bridge] update(%d images, msg=%s)%n", imageIds.length, message);
             this.pendingImageIds = imageIds;
             this.cycleCompleted = false;
             this.hasNewData = true;
@@ -82,7 +81,6 @@ public class Bridge {
             while (!hasNewData) {
                 dataAvailable.await();
             }
-            System.out.printf("[Bridge] IDLE -> SENT (injecting %d images)%n", pendingImageIds.length);
             hasNewData = false;
         } finally {
             lock.unlock();
@@ -95,7 +93,6 @@ public class Bridge {
         try {
             lastCacheSize = cache.getCapacity();
             cycleCompleted = true;
-            System.out.printf("[Bridge] SENT -> IDLE (cycle done, cache size = %d)%n", lastCacheSize);
             cycleDone.signalAll();
         } finally {
             lock.unlock();

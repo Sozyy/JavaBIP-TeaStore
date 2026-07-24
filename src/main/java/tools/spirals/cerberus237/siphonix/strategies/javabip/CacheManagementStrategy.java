@@ -1,5 +1,7 @@
 package tools.spirals.cerberus237.siphonix.strategies.javabip;
 
+import java.io.IOException;
+
 import akka.actor.ActorSystem;
 
 import tools.spirals.cerberus237.siphonix.strategies.javabip.component.Bridge;
@@ -69,6 +71,14 @@ public class CacheManagementStrategy implements Runnable {
     private static final long  POLL_INTERVAL_MS  = 2_000L;
     private static final long  CYCLE_TIMEOUT_MS  = 10_000L;
 
+    // Written every iteration (not just on a graceful shutdown) because the "image" container
+    // has no shutdown hook and is stopped by the daemon JVM just being killed (see javabipThread
+    // in SiphoniX): waiting for a clean interrupt to flush the history would lose it entirely.
+    // Mounted to the host via the "image" service's ./output volume (see docker-compose.yml) so
+    // scripts/plot_cache_history.py can read it while or after the strategy runs.
+    private static final String OUTPUT_DIR = System.getenv().getOrDefault("CACHE_HISTORY_DIR", "/opt/siphonix/output");
+    private static final String CACHE_HISTORY_CSV = String.format("%s/cache_history_KP%s_KI%s_KD%s.csv", OUTPUT_DIR, KP, KI, KD);
+
     public CacheManagementStrategy(String imageBaseUrl) {
         this.imageBaseUrl = imageBaseUrl;
     }
@@ -104,6 +114,20 @@ public class CacheManagementStrategy implements Runnable {
             engine.specifyGlue(glue);
             engine.start();
             engine.execute();
+
+            // The JVM runs as root inside the "image" container, so files it creates under the
+            // bind-mounted OUTPUT_DIR come out root-owned with the default 0755 dir permissions
+            // on the host -- making the CSV impossible to delete/replace from the host side
+            // without root (directory *write* permission, not file ownership, is what Linux
+            // checks for unlink). Chmod'ing the dir world-writable lets any host user manage it.
+            try {
+                java.nio.file.Path outputDir = java.nio.file.Paths.get(OUTPUT_DIR);
+                java.nio.file.Files.createDirectories(outputDir);
+                java.nio.file.Files.setPosixFilePermissions(outputDir,
+                        java.nio.file.attribute.PosixFilePermissions.fromString("rwxrwxrwx"));
+            } catch (Exception e) {
+                LOG.warn("[CacheManagement] could not make {} world-writable: {}", OUTPUT_DIR, e.getMessage());
+            }
 
             int iter = 0;
             while (!Thread.currentThread().isInterrupted()) {
@@ -142,6 +166,13 @@ public class CacheManagementStrategy implements Runnable {
                 } else {
                     LOG.debug("[CacheManagement] iter={} images=0 (no traffic or unreachable) real_bytes={}", iter, realOccupation);
                 }
+
+                try {
+                    cache.exportHistoryCsv(CACHE_HISTORY_CSV);
+                } catch (IOException e) {
+                    LOG.warn("[CacheManagement] failed to export cache history to {}: {}", CACHE_HISTORY_CSV, e.getMessage());
+                }
+
                 iter++;
                 Thread.sleep(POLL_INTERVAL_MS);
             }
