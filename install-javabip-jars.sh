@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # install-javabip-jars.sh
-# À exécuter UNE SEULE FOIS depuis la racine du projet, avant "mvn compile"
-# Installe les JARs locaux (dossier libs/) dans le dépôt Maven local (~/.m2)
+# Execute this script once before anything else
+# Installs JavaBIP JARs locally in the ~/.m2 directory 
 
 set -e
 LIBS_DIR="$(dirname "$0")/libs"
@@ -45,4 +45,4 @@ mvn install:install-file -Dfile="$LIBS_DIR/javabdd-1.0b2.jar" \
     -Dversion=1.0b2 -Dpackaging=jar
 
 echo ""
-echo "==> Tous les JARs sont installés. Tu peux maintenant lancer : mvn compile"
+echo "==> All done, compilation can be executed now "
