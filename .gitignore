@@ -4,4 +4,4 @@ target/
 .idea/
 .vscode/
 .gradle/
-
+output/
