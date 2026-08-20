@@ -4,6 +4,4 @@ target/
 .idea/
 .vscode/
 .gradle/
-libs/*.jar
-!libs/.gitkeep
-/output/
+
